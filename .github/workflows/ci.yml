@@ -70,4 +70,4 @@ jobs:
         run: cmake -B build -DCMAKE_BUILD_TYPE=Debug
       - name: clang-tidy
         run: |
-          git ls-files 'engine/*.cpp' 'server/*.cpp' | xargs -r clang-tidy-19 -p build --quiet
+          git ls-files 'engine/*.cpp' 'server/*.cpp' 'tools/*.cpp' | xargs -r clang-tidy-19 -p build --quiet

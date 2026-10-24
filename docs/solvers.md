@@ -98,3 +98,44 @@ tick, so if the argument were wrong the "exact solver == brute force" tests woul
 Declining to start a legal run now (to keep its inputs or worker for a later, better run)
 is of course explored by every exact solver; the greedy solvers never do it, which is one
 reason they are heuristics.
+
+---
+
+## Instance generator (`pf::generate`)
+
+Resources get a level `0..chain_depth`. Processes turn lower-level resources into
+higher-level ones (1-2 inputs), so the process graph is acyclic; a few "source" processes
+(probability `generator_probability`) make level-0 resources from nothing. Prices grow with
+level, and intermediates are unsellable with probability `zero_price_probability`, which is
+what makes the market-price greedy fail.
+
+**Guaranteed profitable path.** Resources `r0..r_depth` form an explicit chain: step `L`
+turns `q[L]` of `r_{L-1}` into `q[L+1]` of `r_L` (`q[depth+1] = 1`), so running each step once
+consumes exactly what the previous step produced. The generator gives `r0` at least `q[1]`
+units of start inventory, raises the horizon to fit the chain's total duration, and sets
+`price(r_depth) > q[1] * price(r0)`. The chain schedule is returned as `witness`; the
+generator tests check that it is valid and strictly beats selling the start inventory.
+
+Presets: `small` (brute-force friendly: 3-4 resources, 2-4 processes, horizon 3-7,
+1-2 workers), `medium` (8 resources, 10 processes, horizon 30, 3 workers), `large`
+(20 resources, 30 processes, horizon 100, 5 workers).
+
+## Comparison runner (`pf_compare`)
+
+```
+build/tools/pf_compare --solvers greedy,greedy_potential,brute_force --count 200 --size small
+build/tools/pf_compare --instances instances --time-limit 2000
+```
+
+Writes one CSV row per (instance, solver): `earnings`, `profit` (earnings minus the value of
+the untouched start inventory), `runtime_ms`, `proven_optimal`, and `gap_pct`, which is
+relative to the proven optimum when any solver proved one, otherwise to the best earnings
+found. Prints a per-solver summary table.
+
+Baseline numbers (200 small instances, seed 1, Apple M-series, Release):
+
+| solver | mean gap % | max gap % | optimal hits | mean ms |
+|---|---|---|---|---|
+| greedy | 8.21 | 86.96 | 152/200 | 0.002 |
+| greedy_potential | 1.65 | 50.00 | 185/200 | 0.002 |
+| brute_force | 0.00 | 0.00 | 200/200 | 1.197 |

@@ -515,4 +515,57 @@ ParseResult<GameSession> parseSession(const json& j) {
   return result;
 }
 
+ParseResult<GeneratorParams> parseGeneratorParams(const json& j) {
+  Reader r;
+  ParseResult<GeneratorParams> result;
+  if (!r.object(j, "",
+                {"size", "seed", "resources", "processes", "chain_depth", "workers", "horizon",
+                 "min_price", "max_price", "max_qty", "max_duration"})) {
+    result.errors = std::move(r.errors());
+    return result;
+  }
+  std::uint64_t seed = 1;
+  if (j.contains("seed")) {
+    if (auto s = r.integer<std::int64_t>(j["seed"], "seed", 0,
+                                         std::numeric_limits<std::int64_t>::max())) {
+      seed = static_cast<std::uint64_t>(*s);
+    }
+  }
+  GeneratorParams params;
+  params.seed = seed;
+  if (j.contains("size")) {
+    const auto size = r.string(j["size"], "size");
+    if (size == "small") {
+      params = GeneratorParams::small(seed);
+    } else if (size == "medium") {
+      params = GeneratorParams::medium(seed);
+    } else if (size == "large") {
+      params = GeneratorParams::large(seed);
+    } else if (size) {
+      r.error("size", "expected small, medium or large");
+    }
+  }
+  const auto read32 = [&](const char* key, std::int32_t lo, std::int32_t hi, std::int32_t& out) {
+    if (!j.contains(key)) return;
+    if (auto v = r.integer<std::int32_t>(j[key], key, lo, hi)) out = *v;
+  };
+  read32("resources", 1, 200, params.resources);
+  read32("processes", 1, 500, params.processes);
+  read32("chain_depth", 1, 20, params.chain_depth);
+  read32("workers", 1, 100, params.workers);
+  read32("horizon", 1, 10'000, params.horizon);
+  read32("max_duration", 1, 1'000, params.max_duration);
+  const auto read64 = [&](const char* key, Quantity lo, Quantity hi, Quantity& out) {
+    if (!j.contains(key)) return;
+    if (auto v = r.integer<Quantity>(j[key], key, lo, hi)) out = *v;
+  };
+  read64("min_price", 0, 10'000, params.min_price);
+  read64("max_price", 0, 10'000, params.max_price);
+  read64("max_qty", 1, 1'000, params.max_qty);
+  if (params.min_price > params.max_price) r.error("min_price", "must be <= max_price");
+  result.errors = std::move(r.errors());
+  if (result.errors.empty()) result.value = params;
+  return result;
+}
+
 }  // namespace pf::json
