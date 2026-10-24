@@ -3,7 +3,9 @@
     <h2 id="graph-title">Process graph</h2>
     <span class="spacer"></span>
     @if (solution(); as s) {
-      <span class="small muted">highlighting <strong>{{ s.solver_name }}</strong></span>
+      <span class="small muted"
+        >highlighting <strong>{{ s.solver_name }}</strong></span
+      >
     }
   </div>
   @if (instance().resources.length === 0) {
@@ -18,19 +20,36 @@
         [attr.aria-label]="summary()"
       >
         <defs>
-          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <marker
+            id="arrow"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
             <path d="M 0 0 L 10 5 L 0 10 z" fill="#8792a6" />
           </marker>
         </defs>
         @for (e of layout().edges; track $index) {
           <path class="edge" [class.faded]="!e.used" [attr.d]="path(e)" marker-end="url(#arrow)" />
           @if (e.qty !== 1) {
-            <text class="qty" [class.faded]="!e.used" [attr.x]="labelPos(e).x" [attr.y]="labelPos(e).y">{{ e.qty }}</text>
+            <text
+              class="qty"
+              [class.faded]="!e.used"
+              [attr.x]="labelPos(e).x"
+              [attr.y]="labelPos(e).y"
+            >
+              {{ e.qty }}
+            </text>
           }
         }
         @for (n of layout().nodes; track n.key) {
           <g [class.faded]="!n.used" [class.process]="n.kind === 'process'">
-            <title>{{ n.kind === 'process' ? 'Process' : 'Resource' }} {{ n.label }} ({{ n.sub }})</title>
+            <title>
+              {{ n.kind === 'process' ? 'Process' : 'Resource' }} {{ n.label }} ({{ n.sub }})
+            </title>
             <rect
               [attr.x]="n.x"
               [attr.y]="n.y"
@@ -47,8 +66,8 @@
       </svg>
     </div>
     <p class="legend small muted">
-      Rounded white boxes are resources (price · start stock); colored boxes are processes
-      (duration · runs in the selected solution).
+      Rounded white boxes are resources (price · start stock); colored boxes are processes (duration
+      · runs in the selected solution).
     </p>
   }
 </section>

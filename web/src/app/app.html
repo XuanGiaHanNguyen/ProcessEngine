@@ -11,9 +11,15 @@
   </nav>
   <div class="server-status" role="status">
     @switch (online()) {
-      @case (true) { <span class="dot ok" aria-hidden="true"></span> Server online }
-      @case (false) { <span class="dot bad" aria-hidden="true"></span> Server offline }
-      @default { <span class="dot" aria-hidden="true"></span> Connecting… }
+      @case (true) {
+        <span class="dot ok" aria-hidden="true"></span> Server online
+      }
+      @case (false) {
+        <span class="dot bad" aria-hidden="true"></span> Server offline
+      }
+      @default {
+        <span class="dot" aria-hidden="true"></span> Connecting…
+      }
     }
   </div>
 </header>

@@ -58,7 +58,9 @@ export class ApiService {
   private readonly http = inject(HttpClient);
 
   private get<T>(path: string): Promise<T> {
-    return firstValueFrom(this.http.get<T>(path).pipe(catchError((e) => throwError(() => toApiError(e)))));
+    return firstValueFrom(
+      this.http.get<T>(path).pipe(catchError((e) => throwError(() => toApiError(e)))),
+    );
   }
 
   private post<T>(path: string, body: unknown = {}): Promise<T> {
@@ -68,7 +70,9 @@ export class ApiService {
   }
 
   private delete<T>(path: string): Promise<T> {
-    return firstValueFrom(this.http.delete<T>(path).pipe(catchError((e) => throwError(() => toApiError(e)))));
+    return firstValueFrom(
+      this.http.delete<T>(path).pipe(catchError((e) => throwError(() => toApiError(e)))),
+    );
   }
 
   health(): Promise<{ status: string }> {
@@ -116,13 +120,19 @@ export class ApiService {
           socket.close(1000);
         }
       };
-      socket.onerror = () => subscriber.error(new ApiError(0, 'websocket', 'Progress stream failed.'));
+      socket.onerror = () =>
+        subscriber.error(new ApiError(0, 'websocket', 'Progress stream failed.'));
       socket.onclose = () => subscriber.complete();
       // Close with an explicit normal code: closing without one makes some servers echo the
       // reserved code 1005, which browsers report as a protocol error.
       return () => {
-        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        socket.onmessage = null;
+        socket.onerror = null;
+        if (socket.readyState === WebSocket.OPEN) {
           socket.close(1000);
+        } else if (socket.readyState === WebSocket.CONNECTING) {
+          // Closing a socket that is still connecting logs a browser warning; close on open.
+          socket.onopen = () => socket.close(1000);
         }
       };
     });

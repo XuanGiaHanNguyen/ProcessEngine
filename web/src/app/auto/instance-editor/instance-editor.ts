@@ -102,7 +102,10 @@ export class InstanceEditor implements OnDestroy {
       const instance = await this.api.generate({ size: this.genSize(), seed: this.genSeed() });
       this.store.setInstance(instance);
       this.selectedSample.set('');
-      this.message.set({ kind: 'info', text: `Generated a ${this.genSize()} instance (seed ${this.genSeed()}).` });
+      this.message.set({
+        kind: 'info',
+        text: `Generated a ${this.genSize()} instance (seed ${this.genSeed()}).`,
+      });
     });
   }
 
@@ -180,7 +183,10 @@ export class InstanceEditor implements OnDestroy {
 
   protected addResource(): void {
     this.edit((i) => {
-      const id = uniqueId('r', i.resources.map((r) => r.id));
+      const id = uniqueId(
+        'r',
+        i.resources.map((r) => r.id),
+      );
       return { ...i, resources: [...i.resources, { id, name: id, sell_price: 1 }] };
     });
   }
@@ -215,7 +221,8 @@ export class InstanceEditor implements OnDestroy {
   protected setStart(id: string, v: string): void {
     this.edit((i) => {
       const qty = num(v);
-      const inventory = qty === 0 ? withoutKey(i.start_inventory, id) : { ...i.start_inventory, [id]: qty };
+      const inventory =
+        qty === 0 ? withoutKey(i.start_inventory, id) : { ...i.start_inventory, [id]: qty };
       return { ...i, start_inventory: inventory };
     });
   }
@@ -240,7 +247,10 @@ export class InstanceEditor implements OnDestroy {
 
   protected addProcess(): void {
     this.edit((i) => {
-      const id = uniqueId('p', i.processes.map((p) => p.id));
+      const id = uniqueId(
+        'p',
+        i.processes.map((p) => p.id),
+      );
       const first = i.resources[0]?.id;
       const second = i.resources[1]?.id ?? first;
       const process: Process = {
@@ -302,7 +312,11 @@ export class InstanceEditor implements OnDestroy {
 export function normalize(raw: Partial<Instance>): Instance {
   return {
     name: raw.name ?? 'Imported',
-    resources: (raw.resources ?? []).map((r) => ({ id: r.id, name: r.name ?? r.id, sell_price: r.sell_price ?? 0 })),
+    resources: (raw.resources ?? []).map((r) => ({
+      id: r.id,
+      name: r.name ?? r.id,
+      sell_price: r.sell_price ?? 0,
+    })),
     processes: (raw.processes ?? []).map((p) => ({
       ...p,
       name: p.name ?? p.id,

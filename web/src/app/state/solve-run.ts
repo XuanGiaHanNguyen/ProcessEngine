@@ -83,7 +83,7 @@ export class SolveRun {
         this.eventsSignal.update((list) => [...list, event]);
         if (event.event !== 'improved' && event.event !== 'heartbeat') void this.refresh(jobId);
       },
-      error: () => this.startPolling(jobId),  // fall back to polling if WebSockets fail
+      error: () => this.startPolling(jobId), // fall back to polling if WebSockets fail
       complete: () => void this.refresh(jobId),
     });
     this.startPolling(jobId);

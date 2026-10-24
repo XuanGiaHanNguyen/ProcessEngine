@@ -40,7 +40,12 @@ export class ChartComponent implements OnDestroy {
       this.chart?.destroy();
       this.chart = new Chart(this.canvas().nativeElement, {
         ...config,
-        options: { responsive: true, maintainAspectRatio: false, animation: false, ...config.options },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          ...config.options,
+        },
       });
     });
   }

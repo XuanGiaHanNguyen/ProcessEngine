@@ -13,7 +13,9 @@ export const DEFAULT_SOLVERS = ['greedy', 'beam_search', 'branch_and_bound'];
       @if (store.catalogLoading()) {
         <p class="muted"><span class="spinner" aria-hidden="true"></span> Loading solvers…</p>
       } @else if (store.solvers().length === 0) {
-        <p class="empty">No solvers available{{ store.catalogError() ? ': ' + store.catalogError() : '' }}.</p>
+        <p class="empty">
+          No solvers available{{ store.catalogError() ? ': ' + store.catalogError() : '' }}.
+        </p>
       } @else {
         <fieldset>
           <legend class="sr-only">Solvers to run</legend>
@@ -41,15 +43,29 @@ export const DEFAULT_SOLVERS = ['greedy', 'beam_search', 'branch_and_bound'];
       <div class="row options">
         <label class="field">
           Time limit (ms)
-          <input type="number" min="10" step="100" data-testid="time-limit" [value]="timeLimit()" (input)="timeLimit.set(+$any($event.target).value)" />
+          <input
+            type="number"
+            min="10"
+            step="100"
+            data-testid="time-limit"
+            [value]="timeLimit()"
+            (input)="timeLimit.set(+$any($event.target).value)"
+          />
         </label>
         <label class="field">
           Seed
-          <input type="number" min="0" [value]="seed()" (input)="seed.set(+$any($event.target).value)" />
+          <input
+            type="number"
+            min="0"
+            [value]="seed()"
+            (input)="seed.set(+$any($event.target).value)"
+          />
         </label>
         <span class="spacer"></span>
         @if (store.run.busy()) {
-          <button type="button" class="danger" data-testid="cancel" (click)="store.run.cancel()">Cancel</button>
+          <button type="button" class="danger" data-testid="cancel" (click)="store.run.cancel()">
+            Cancel
+          </button>
         }
         <button
           type="button"
@@ -58,7 +74,11 @@ export const DEFAULT_SOLVERS = ['greedy', 'beam_search', 'branch_and_bound'];
           [disabled]="!canRun()"
           (click)="run()"
         >
-          @if (store.run.busy()) { <span class="spinner" aria-hidden="true"></span> Running… } @else { Run {{ selected().size }} solver{{ selected().size === 1 ? '' : 's' }} }
+          @if (store.run.busy()) {
+            <span class="spinner" aria-hidden="true"></span> Running…
+          } @else {
+            Run {{ selected().size }} solver{{ selected().size === 1 ? '' : 's' }}
+          }
         </button>
       </div>
       @if (!instanceValid()) {
@@ -133,7 +153,10 @@ export class SolverPanel {
   protected run(): void {
     this.store.selectedSolver.set(null);
     // Keep the registry order so tables and charts are stable.
-    const names = this.store.solvers().map((s) => s.name).filter((n) => this.selected().has(n));
+    const names = this.store
+      .solvers()
+      .map((s) => s.name)
+      .filter((n) => this.selected().has(n));
     void this.store.run.start(this.store.instance(), names, {
       timeLimitMs: this.timeLimit(),
       seed: this.seed(),

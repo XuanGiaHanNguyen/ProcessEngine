@@ -36,7 +36,7 @@ import { SolverPanel } from './solver-panel/solver-panel';
       [instance]="store.instance()"
       [solution]="store.selectedSolution()"
       [choices]="choices()"
-      (select)="store.selectedSolver.set($event)"
+      (selectSolver)="store.selectedSolver.set($event)"
       (replay)="replay($event)"
     />
   `,

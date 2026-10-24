@@ -32,7 +32,7 @@ export class ResultsView {
   readonly solution = input<Solution | null>(null);
   /** Solutions the user can switch between. */
   readonly choices = input<Solution[]>([]);
-  readonly select = output<string>();
+  readonly selectSolver = output<string>();
   readonly replay = output<Solution>();
 
   protected readonly timeline = signal<Timeline | null>(null);

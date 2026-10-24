@@ -1,5 +1,7 @@
 #include "pf/json_io.hpp"
 
+#include "pf/limits.hpp"
+
 #include <algorithm>
 #include <limits>
 #include <ranges>
@@ -159,7 +161,8 @@ void readProcesses(Reader& r, const json& j, Instance& instance) {
     }
     if (!item.contains("duration")) {
       r.error(path, "missing required field 'duration'");
-    } else if (auto d = r.integer<Tick>(item["duration"], path + ".duration", 1, kInt32Max)) {
+    } else if (auto d =
+                   r.integer<Tick>(item["duration"], path + ".duration", 1, limits::kMaxHorizon)) {
       p.duration = *d;
     }
     if (item.contains("max_runs") && !item["max_runs"].is_null()) {
@@ -207,12 +210,12 @@ ParseResult<Instance> parseInstance(const json& j) {
   }
   if (!j.contains("workers")) {
     r.error("", "missing required field 'workers'");
-  } else if (auto w = r.integer<std::int32_t>(j["workers"], "workers", 1, kInt32Max)) {
+  } else if (auto w = r.integer<std::int32_t>(j["workers"], "workers", 1, limits::kMaxWorkers)) {
     instance.workers = *w;
   }
   if (!j.contains("horizon")) {
     r.error("", "missing required field 'horizon'");
-  } else if (auto h = r.integer<Tick>(j["horizon"], "horizon", 0, kInt32Max)) {
+  } else if (auto h = r.integer<Tick>(j["horizon"], "horizon", 0, limits::kMaxHorizon)) {
     instance.horizon = *h;
   }
   if (j.contains("start_money")) {

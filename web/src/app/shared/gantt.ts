@@ -26,8 +26,16 @@ export interface GanttBar {
       [style.height.px]="svgHeight()"
     >
       @for (lane of lanes(); track lane) {
-        <rect class="lane" [attr.x]="left" [attr.y]="laneY(lane)" [attr.width]="plotWidth" [attr.height]="laneHeight - 4" />
-        <text class="lane-label" x="4" [attr.y]="laneY(lane) + laneHeight / 2 + 2">W{{ lane + 1 }}</text>
+        <rect
+          class="lane"
+          [attr.x]="left"
+          [attr.y]="laneY(lane)"
+          [attr.width]="plotWidth"
+          [attr.height]="laneHeight - 4"
+        />
+        <text class="lane-label" x="4" [attr.y]="laneY(lane) + laneHeight / 2 + 2">
+          W{{ lane + 1 }}
+        </text>
       }
       @for (t of ticks(); track t) {
         <line class="grid" [attr.x1]="x(t)" [attr.x2]="x(t)" y1="0" [attr.y2]="lanesHeight()" />
@@ -48,14 +56,25 @@ export interface GanttBar {
             rx="3"
           />
           @if (x(bar.end) - x(bar.start) > 34) {
-            <text class="bar-label" [class.ghost]="bar.ghost" [attr.x]="x(bar.start) + 5" [attr.y]="laneY(bar.slot) + laneHeight / 2 + 2">
+            <text
+              class="bar-label"
+              [class.ghost]="bar.ghost"
+              [attr.x]="x(bar.start) + 5"
+              [attr.y]="laneY(bar.slot) + laneHeight / 2 + 2"
+            >
               {{ bar.label }}
             </text>
           }
         </g>
       }
       @if (currentTick() !== null) {
-        <line class="now" [attr.x1]="x(currentTick()!)" [attr.x2]="x(currentTick()!)" y1="0" [attr.y2]="lanesHeight()" />
+        <line
+          class="now"
+          [attr.x1]="x(currentTick()!)"
+          [attr.x2]="x(currentTick()!)"
+          y1="0"
+          [attr.y2]="lanesHeight()"
+        />
       }
     </svg>
   `,

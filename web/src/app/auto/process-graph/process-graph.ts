@@ -47,7 +47,8 @@ export class ProcessGraph {
 
   protected readonly runCounts = computed(() => {
     const counts = new Map<string, number>();
-    for (const r of this.solution()?.runs ?? []) counts.set(r.process_id, (counts.get(r.process_id) ?? 0) + 1);
+    for (const r of this.solution()?.runs ?? [])
+      counts.set(r.process_id, (counts.get(r.process_id) ?? 0) + 1);
     return counts;
   });
 
@@ -60,7 +61,7 @@ export class ProcessGraph {
     // Resource level = 1 + max level of the inputs of any process producing it (bounded so
     // cycles terminate). Never-produced resources are level 0.
     const level = new Map(inst.resources.map((r) => [r.id, 0]));
-    for (let pass = 0; pass < inst.resources.length; pass++) {
+    for (const _pass of inst.resources) {
       let changed = false;
       for (const p of inst.processes) {
         const inLevel = Math.max(-1, ...Object.keys(p.inputs).map((r) => level.get(r) ?? 0));
@@ -151,8 +152,10 @@ export class ProcessGraph {
   protected readonly summary = computed(() => {
     const inst = this.instance();
     const used = [...this.runCounts().entries()].map(([id, n]) => `${id} ×${n}`).join(', ');
-    return `Process graph with ${inst.resources.length} resources and ${inst.processes.length} processes.` +
-      (used ? ` Used in the selected solution: ${used}.` : '');
+    return (
+      `Process graph with ${inst.resources.length} resources and ${inst.processes.length} processes.` +
+      (used ? ` Used in the selected solution: ${used}.` : '')
+    );
   });
 
   protected path(e: Edge): string {

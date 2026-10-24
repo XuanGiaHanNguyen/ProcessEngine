@@ -21,7 +21,9 @@ import { ComparisonRow } from '../../state/solve-run';
       } @else {
         <div class="table-scroll">
           <table data-testid="comparison-table">
-            <caption class="sr-only">Solver comparison</caption>
+            <caption class="sr-only">
+              Solver comparison
+            </caption>
             <thead>
               <tr>
                 <th scope="col">Solver</th>
@@ -36,7 +38,14 @@ import { ComparisonRow } from '../../state/solve-run';
               @for (r of rows(); track r.solver) {
                 <tr [class.selected]="r.solver === selected()">
                   <th scope="row">
-                    <button type="button" class="link mono" (click)="pick.emit(r.solver)" [attr.aria-pressed]="r.solver === selected()">{{ r.solver }}</button>
+                    <button
+                      type="button"
+                      class="link mono"
+                      (click)="pick.emit(r.solver)"
+                      [attr.aria-pressed]="r.solver === selected()"
+                    >
+                      {{ r.solver }}
+                    </button>
                   </th>
                   <td>
                     @if (r.status === 'running' || r.status === 'queued') {
@@ -45,13 +54,25 @@ import { ComparisonRow } from '../../state/solve-run';
                     {{ r.status }}
                   </td>
                   <td class="num" [attr.data-testid]="'earnings-' + r.solver">
-                    @if (r.solution?.valid) { {{ r.solution!.earnings }} } @else if (r.solution) { <span class="badge bad" [title]="r.solution.error ?? ''">failed</span> } @else { – }
+                    @if (r.solution?.valid) {
+                      {{ r.solution!.earnings }}
+                    } @else if (r.solution) {
+                      <span class="badge bad" [title]="r.solution.error ?? ''">failed</span>
+                    } @else {
+                      –
+                    }
                   </td>
                   <td class="num">{{ r.gapPct === null ? '–' : r.gapPct.toFixed(2) + '%' }}</td>
                   <td>
-                    @if (r.solution?.proven_optimal) { <span class="badge ok">yes</span> } @else if (r.solution) { <span class="muted">no</span> }
+                    @if (r.solution?.proven_optimal) {
+                      <span class="badge ok">yes</span>
+                    } @else if (r.solution) {
+                      <span class="muted">no</span>
+                    }
                   </td>
-                  <td class="num">{{ r.solution ? r.solution.runtime_ms.toFixed(1) + ' ms' : '–' }}</td>
+                  <td class="num">
+                    {{ r.solution ? r.solution.runtime_ms.toFixed(1) + ' ms' : '–' }}
+                  </td>
                 </tr>
               }
             </tbody>
@@ -59,7 +80,11 @@ import { ComparisonRow } from '../../state/solve-run';
         </div>
         <p class="small muted">
           Gap is measured against
-          {{ referenceKind() === 'proven' ? 'the proven optimum' : 'the best schedule found' }}@if (reference() !== null) { ({{ reference() }})}.
+          {{ referenceKind() === 'proven' ? 'the proven optimum' : 'the best schedule found' }}
+          @if (reference() !== null) {
+            ({{ reference() }})
+          }
+          .
         </p>
         <div class="charts">
           @if (earningsChart(); as cfg) {
@@ -77,7 +102,11 @@ import { ComparisonRow } from '../../state/solve-run';
         </div>
         @if (convergenceChart(); as cfg) {
           <h3>Convergence (best so far over time)</h3>
-          <app-chart [config]="cfg" [height]="220" label="Best earnings found by each solver over elapsed time" />
+          <app-chart
+            [config]="cfg"
+            [height]="220"
+            label="Best earnings found by each solver over elapsed time"
+          />
         }
       }
     </section>
@@ -118,7 +147,11 @@ export class ComparisonView {
   private readonly done = computed(() => this.rows().filter((r) => r.solution?.valid));
 
   protected readonly earningsSummary = computed(
-    () => 'Earnings per solver: ' + this.done().map((r) => `${r.solver} ${r.solution!.earnings}`).join(', '),
+    () =>
+      'Earnings per solver: ' +
+      this.done()
+        .map((r) => `${r.solver} ${r.solution!.earnings}`)
+        .join(', '),
   );
 
   protected readonly earningsChart = computed<ChartConfiguration | null>(() => {

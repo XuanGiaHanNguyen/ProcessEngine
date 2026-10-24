@@ -12,7 +12,9 @@ export function blankInstance(): Instance {
       { id: 'wood', name: 'Wood', sell_price: 1 },
       { id: 'plank', name: 'Plank', sell_price: 4 },
     ],
-    processes: [{ id: 'saw', name: 'Saw', inputs: { wood: 2 }, outputs: { plank: 1 }, duration: 2 }],
+    processes: [
+      { id: 'saw', name: 'Saw', inputs: { wood: 2 }, outputs: { plank: 1 }, duration: 2 },
+    ],
     start_inventory: { wood: 4 },
     workers: 1,
     horizon: 4,
@@ -47,7 +49,8 @@ export class WorkspaceStore {
   readonly selectedSolution = computed(() => {
     const name = this.selectedSolver();
     const results = this.run.job()?.results ?? [];
-    const pick = results.find((r) => r.solver === name && r.solution?.valid) ??
+    const pick =
+      results.find((r) => r.solver === name && r.solution?.valid) ??
       [...results]
         .filter((r) => r.solution?.valid)
         .sort((a, b) => (b.solution?.earnings ?? 0) - (a.solution?.earnings ?? 0))[0];

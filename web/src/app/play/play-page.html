@@ -1,0 +1,433 @@
+<h1 class="sr-only">Play mode</h1>
+
+@if (error(); as err) {
+  <p class="alert" role="alert" data-testid="play-error">{{ err }}</p>
+}
+@if (notice(); as n) {
+  <p class="alert info" role="status">
+    {{ n }} <button type="button" class="small" (click)="notice.set(null)">Dismiss</button>
+  </p>
+}
+
+@if (!view()) {
+  <section class="card start" aria-labelledby="start-title">
+    <h2 id="start-title">Play a production game</h2>
+    <p class="muted">
+      You are the scheduler. Start processes by hand, advance time, and try to end with the most
+      valuable inventory at the horizon. The server enforces exactly the same rules as the solvers,
+      so you can compare your score with theirs at the end.
+    </p>
+    @if (busy()) {
+      <p class="muted"><span class="spinner" aria-hidden="true"></span> Starting…</p>
+    }
+    <h3>Pick a sample</h3>
+    @if (store.samples().length === 0) {
+      <p class="empty">
+        {{ store.catalogLoading() ? 'Loading samples…' : 'No samples available.' }}
+      </p>
+    }
+    <ul class="samples">
+      @for (s of store.samples(); track s.id) {
+        <li>
+          <button
+            type="button"
+            class="sample"
+            [attr.data-testid]="'play-sample-' + s.id"
+            (click)="startFromSample(s.id)"
+            [disabled]="busy()"
+          >
+            <strong>{{ s.name }}</strong>
+            <span class="small muted">{{ s.description }}</span>
+            <span class="small"
+              >{{ s.processes }} processes · {{ s.workers }} workers · {{ s.horizon }} ticks</span
+            >
+          </button>
+        </li>
+      }
+    </ul>
+    <div class="row">
+      <button type="button" (click)="startFromWorkspace()" [disabled]="busy()">
+        Play the instance from Auto mode (“{{ store.instance().name }}”)
+      </button>
+      <label class="button">
+        Import a run…
+        <input
+          type="file"
+          class="sr-only"
+          accept="application/json,.json"
+          (change)="importRun($event)"
+        />
+      </label>
+    </div>
+  </section>
+} @else {
+  @let s = state()!;
+  @let inst = instance()!;
+  <section class="card topbar" aria-label="Game status">
+    <div class="row">
+      <div class="stat">
+        <span class="label">Tick</span>
+        <span class="value" data-testid="tick"
+          >{{ s.tick }} <span class="muted small">/ {{ s.horizon }}</span></span
+        >
+      </div>
+      <div class="stat">
+        <span class="label">Projected earnings</span>
+        <span class="value" data-testid="projected">{{ s.projected_earnings }}</span>
+      </div>
+      <div class="stat">
+        <span class="label">Money</span>
+        <span class="value">{{ s.money }}</span>
+      </div>
+      @if (showSolverInfo() && bestKnown() !== null) {
+        <div class="stat">
+          <span class="label">Best known</span>
+          <span class="value">{{ bestKnown() }}</span>
+        </div>
+      }
+      <span class="spacer"></span>
+      <div class="mode" role="radiogroup" aria-label="Play style">
+        <label
+          ><input
+            type="radio"
+            name="mode"
+            value="challenge"
+            [checked]="mode() === 'challenge'"
+            (change)="mode.set('challenge')"
+          />
+          Challenge</label
+        >
+        <label
+          ><input
+            type="radio"
+            name="mode"
+            value="assist"
+            [checked]="mode() === 'assist'"
+            (change)="mode.set('assist')"
+          />
+          Assist</label
+        >
+      </div>
+      <button type="button" (click)="leave()">Change game</button>
+    </div>
+    <div class="scrubber row">
+      <label for="scrub" class="small muted">History</label>
+      <input
+        id="scrub"
+        type="range"
+        min="0"
+        [max]="timelineLength()"
+        [value]="historyLength()"
+        [disabled]="busy() || timelineLength() === 0"
+        (change)="scrubTo(+$any($event.target).value)"
+        [attr.aria-valuetext]="
+          'step ' + historyLength() + ' of ' + timelineLength() + ', tick ' + s.tick
+        "
+      />
+      <span class="small muted">step {{ historyLength() }} / {{ timelineLength() }}</span>
+    </div>
+    @if (replaying(); as name) {
+      <p class="replay-banner small" role="status">
+        Replaying <strong>{{ name }}</strong
+        >'s schedule — {{ s.redo_available }} step{{ s.redo_available === 1 ? '' : 's' }} left.
+        <button
+          type="button"
+          class="small"
+          (click)="redo()"
+          [disabled]="busy() || s.redo_available === 0"
+        >
+          Step
+        </button>
+        <button
+          type="button"
+          class="small"
+          (click)="toggleAutoplay()"
+          [disabled]="s.redo_available === 0"
+        >
+          {{ autoplay() ? 'Pause' : 'Play' }}
+        </button>
+      </p>
+    }
+  </section>
+
+  <div class="board">
+    <section class="card" aria-labelledby="proc-title">
+      <h2 id="proc-title">Processes</h2>
+      <ul class="processes">
+        @for (p of inst.processes; track p.id) {
+          @let st = statusOf(p.id);
+          <li [style.border-left-color]="colors().get(p.id)">
+            <div class="pinfo">
+              <strong>{{ p.name }}</strong>
+              <span class="small">{{ amounts(p.inputs) }} → {{ amounts(p.outputs) }}</span>
+              <span class="small muted"
+                >{{ p.duration }} tick{{ p.duration === 1 ? '' : 's' }}
+                @if (runsLeft(p.id); as left) {
+                  · {{ left }}
+                }
+              </span>
+              @if (st && !st.legal) {
+                <span class="small reason" [id]="'why-' + p.id">{{ st.reason }}</span>
+              }
+            </div>
+            <button
+              type="button"
+              class="primary"
+              [attr.data-testid]="'start-' + p.id"
+              [disabled]="!st?.legal || busy()"
+              [title]="st?.legal ? 'Start ' + p.name + ' at tick ' + s.tick : (st?.reason ?? '')"
+              [attr.aria-describedby]="st && !st.legal ? 'why-' + p.id : null"
+              (click)="start(p.id)"
+            >
+              Start
+            </button>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <div class="col">
+      <section class="card" aria-labelledby="time-title">
+        <h2 id="time-title">Time</h2>
+        <div class="row controls">
+          <button
+            type="button"
+            data-testid="wait"
+            (click)="wait()"
+            [disabled]="busy() || !canWait()"
+          >
+            Wait 1 tick <kbd>Space</kbd>
+          </button>
+          <button
+            type="button"
+            data-testid="skip"
+            (click)="skip()"
+            [disabled]="busy() || nextEvent() === null"
+          >
+            Skip to {{ nextEvent() === null ? 'next event' : 'tick ' + nextEvent() }} <kbd>N</kbd>
+          </button>
+        </div>
+        <div class="row controls">
+          <button
+            type="button"
+            data-testid="undo"
+            (click)="undo()"
+            [disabled]="busy() || s.history.length === 0"
+          >
+            Undo <kbd>Z</kbd>
+          </button>
+          <button
+            type="button"
+            data-testid="redo"
+            (click)="redo()"
+            [disabled]="busy() || s.redo_available === 0"
+          >
+            Redo <kbd>Y</kbd>
+          </button>
+          <button
+            type="button"
+            (click)="restart()"
+            [disabled]="busy() || (s.history.length === 0 && s.redo_available === 0)"
+          >
+            Restart
+          </button>
+          <span class="spacer"></span>
+          <button
+            type="button"
+            class="primary"
+            data-testid="finish"
+            (click)="finish()"
+            [disabled]="busy() || s.finished"
+          >
+            Finish game
+          </button>
+        </div>
+        @if (mode() === 'assist' && !s.finished) {
+          <div class="hint">
+            <button type="button" data-testid="hint" (click)="askHint()" [disabled]="busy()">
+              Hint <kbd>H</kbd>
+            </button>
+            @if (hint(); as h) {
+              <p class="small" role="status" data-testid="hint-text">
+                {{ describe(h.suggestedAction) }}. Following {{ h.solver }} from here earns
+                <strong>{{ h.projectedEarnings }}</strong
+                >{{ h.optimal ? ' (the best possible from here)' : '' }}.
+                <button type="button" class="small" (click)="applyHint()">Do it</button>
+              </p>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="card" aria-labelledby="workers-title">
+        <h2 id="workers-title">
+          Workers <span class="muted small">{{ s.free_workers }} of {{ s.workers }} free</span>
+        </h2>
+        <ul class="workers">
+          @for (w of workerSlots(); track $index) {
+            <li>
+              <span class="slot">W{{ $index + 1 }}</span>
+              @if (w) {
+                <span class="wname">{{ w.name }}</span>
+                <div
+                  class="bar"
+                  role="progressbar"
+                  [attr.aria-valuenow]="w.pct"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  [attr.aria-label]="w.name + ' progress'"
+                >
+                  <div
+                    class="fill"
+                    [style.width.%]="w.pct"
+                    [style.background]="colors().get(w.process)"
+                  ></div>
+                </div>
+                <span class="small muted">done at {{ w.end }} ({{ w.remaining }} left)</span>
+              } @else {
+                <span class="muted small">idle</span>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    </div>
+
+    <section class="card" aria-labelledby="inv-title">
+      <h2 id="inv-title">Inventory</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Resource</th>
+            <th class="num">Qty</th>
+            <th class="num">Price</th>
+            <th class="num">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of inventoryRows(); track r.id) {
+            <tr [class.zero]="r.qty === 0">
+              <td>{{ r.name }}</td>
+              <td class="num" [attr.data-testid]="'inv-' + r.id">{{ r.qty }}</td>
+              <td class="num">{{ r.price }}</td>
+              <td class="num">{{ r.value }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <p class="small muted">Doing nothing would earn {{ baseline() }}.</p>
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="gantt-title">
+    <h2 id="gantt-title">Your schedule</h2>
+    @if (bars().length === 0) {
+      <p class="empty small">No runs started yet.</p>
+    } @else {
+      <app-gantt
+        [bars]="bars()"
+        [workers]="inst.workers"
+        [horizon]="inst.horizon"
+        [currentTick]="s.tick"
+      />
+    }
+  </section>
+
+  @if (finished(); as f) {
+    <section class="card result" aria-labelledby="result-title" data-testid="result">
+      <h2 id="result-title">
+        {{ replaying() ? replaying() + "'s" : 'Your' }} final score:
+        <span data-testid="final-score">{{ f.solution.earnings }}</span>
+      </h2>
+      <p class="small muted">
+        Validated by the engine: {{ f.validated ? 'yes' : 'no' }} ·
+        {{ f.solution.runs.length }} runs · {{ f.solution.earnings - baseline() >= 0 ? '+' : ''
+        }}{{ f.solution.earnings - baseline() }} vs. doing nothing.
+      </p>
+      <div class="row">
+        <button type="button" (click)="exportRun()">Export run (JSON)</button>
+        @if (shareLink()) {
+          <button type="button" (click)="copyShareLink()">Copy share link</button>
+        }
+      </div>
+    </section>
+  }
+
+  @if (playerResult()) {
+    <section class="card" aria-labelledby="reveal-title">
+      <h2 id="reveal-title">How did you do?</h2>
+      @if (!reveal.job() && !reveal.busy()) {
+        <p class="muted">Run the solvers on the same instance and see where you rank.</p>
+        <fieldset class="reveal-solvers">
+          <legend class="sr-only">Solvers to compare against</legend>
+          @for (sv of store.solvers(); track sv.name) {
+            <label
+              ><input
+                type="checkbox"
+                [checked]="revealSolvers().has(sv.name)"
+                (change)="toggleRevealSolver(sv.name, $any($event.target).checked)"
+              />
+              <span class="mono">{{ sv.name }}</span></label
+            >
+          }
+        </fieldset>
+        <button
+          type="button"
+          class="primary"
+          data-testid="reveal"
+          (click)="revealNow()"
+          [disabled]="busy() || revealSolvers().size === 0"
+        >
+          Reveal solvers
+        </button>
+      }
+      @if (reveal.busy()) {
+        <p class="muted" role="status">
+          <span class="spinner" aria-hidden="true"></span> Solvers are working…
+        </p>
+      }
+      @if (reveal.error(); as err) {
+        <p class="alert" role="alert">{{ err }}</p>
+      }
+      @if (reveal.job() && !reveal.busy()) {
+        @if (playerPct() !== null) {
+          <p class="score" data-testid="player-pct">
+            You scored <strong>{{ playerPct()!.toFixed(1) }}%</strong> of the best known solution.
+          </p>
+        }
+        <ol class="leaderboard" data-testid="leaderboard">
+          @for (r of leaderboard(); track r.name) {
+            <li [class.player]="r.isPlayer">
+              <span class="name">{{ r.name }}</span>
+              <span class="pct-bar" aria-hidden="true"><span [style.width.%]="r.pct"></span></span>
+              <span class="num">{{ r.earnings }}</span>
+              <span class="num small muted">{{ r.pct.toFixed(1) }}%</span>
+              @if (r.proven) {
+                <span class="badge ok">optimal</span>
+              }
+              @if (!r.isPlayer && r.solution) {
+                <button type="button" class="small" (click)="replaySolution(r.solution)">
+                  Replay
+                </button>
+              }
+            </li>
+          }
+        </ol>
+        <details>
+          <summary>Solver details</summary>
+          <app-comparison-view
+            [rows]="reveal.rows()"
+            [events]="reveal.events()"
+            [reference]="reveal.reference().value"
+            [referenceKind]="reveal.reference().proven !== null ? 'proven' : 'best'"
+          />
+        </details>
+      }
+    </section>
+  }
+
+  <p class="small muted shortcuts">
+    Shortcuts: <kbd>Space</kbd> wait · <kbd>N</kbd> skip to next event · <kbd>Z</kbd> undo ·
+    <kbd>Y</kbd> redo · <kbd>H</kbd> hint (Assist)
+  </p>
+}
