@@ -10,6 +10,7 @@ add_executable(pf_engine_tests
   property_test.cpp
   registry_test.cpp
   rules_test.cpp
+  timeline_test.cpp
   instances_test.cpp
   validator_test.cpp
   version_test.cpp)

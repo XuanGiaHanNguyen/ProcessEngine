@@ -116,6 +116,20 @@ action. Rejection codes: `unknown_process`, `past_horizon`, `insufficient_invent
 `no_free_worker`, `max_runs_exceeded`, `at_horizon`, `invalid_tick`, `game_finished`,
 `nothing_to_undo`, `nothing_to_redo`.
 
+### Timeline (for the results view)
+
+```json
+{
+  "earnings": 13,
+  "runs": [{"run_index": 0, "process_id": "smelt", "start": 0, "end": 2, "slot": 0}],
+  "points": [{"tick": 0, "inventory": {"ore": 2}, "busy_workers": 2, "value": 0}]
+}
+```
+`slot` assigns each run to a worker lane (lowest free slot first). `points` hold the
+inventory right after each tick where something starts or ends (plus 0 and T); `value` is
+start money plus inventory at sell prices, not counting runs in progress. Computed by the
+engine, so the frontend never re-implements the rules.
+
 ### ProgressEvent (WebSocket messages)
 
 ```json
@@ -138,6 +152,7 @@ action. Rejection codes: `unknown_process`, `past_horizon`, `insufficient_invent
 | POST | `/api/instances/validate` | `Instance` | `{valid, errors[]}` (always 200) |
 | POST | `/api/instances/generate` | `GeneratorParams` | `Instance` |
 | POST | `/api/schedules/validate` | `{instance, schedule}` | `{valid, earnings, final_inventory, violation}` |
+| POST | `/api/schedules/timeline` | `{instance, schedule}` | `Timeline` (422 if the schedule is invalid) |
 
 `GeneratorParams`: `{"size": "small"|"medium"|"large", "seed", "resources", "processes",
 "chain_depth", "workers", "horizon", "min_price", "max_price", "max_qty", "max_duration"}`,

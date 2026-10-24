@@ -4,6 +4,7 @@
 #include "pf/generator.hpp"
 #include "pf/model.hpp"
 #include "pf/solver.hpp"
+#include "pf/timeline.hpp"
 #include "pf/validator.hpp"
 
 #include <optional>
@@ -63,6 +64,10 @@ struct ParseResult {
 /// Rebuilds a session by replaying its history (and redo list) through the rules, so a
 /// tampered document cannot produce an illegal state.
 [[nodiscard]] ParseResult<GameSession> parseSession(const nlohmann::json& j);
+
+/// {"earnings", "runs": [{run_index, process_id, start, end, slot}],
+///  "points": [{tick, inventory: {id: qty}, busy_workers, value}]}.
+[[nodiscard]] nlohmann::json toJson(const Timeline& timeline, const Instance& instance);
 
 /// Parses generator parameters. An optional "size" ("small", "medium", "large") selects a
 /// preset; any other field (seed, resources, processes, chain_depth, workers, horizon,

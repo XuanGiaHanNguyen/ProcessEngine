@@ -515,6 +515,30 @@ ParseResult<GameSession> parseSession(const json& j) {
   return result;
 }
 
+json toJson(const Timeline& timeline, const Instance& instance) {
+  json runs = json::array();
+  for (const TimelineRun& r : timeline.runs) {
+    runs.push_back({{"run_index", r.run_index},
+                    {"process_id", instance.processes[r.process].id},
+                    {"start", r.start},
+                    {"end", r.end},
+                    {"slot", r.slot}});
+  }
+  json points = json::array();
+  for (const TimelinePoint& p : timeline.points) {
+    json inventory = json::object();
+    for (std::size_t i = 0; i < p.inventory.size(); ++i) {
+      inventory[instance.resources[i].id] = p.inventory[i];
+    }
+    points.push_back({{"tick", p.tick},
+                      {"inventory", std::move(inventory)},
+                      {"busy_workers", p.busy_workers},
+                      {"value", p.value}});
+  }
+  return {
+      {"earnings", timeline.earnings}, {"runs", std::move(runs)}, {"points", std::move(points)}};
+}
+
 ParseResult<GeneratorParams> parseGeneratorParams(const json& j) {
   Reader r;
   ParseResult<GeneratorParams> result;
