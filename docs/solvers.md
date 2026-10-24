@@ -186,7 +186,7 @@ only if the search finished. Deterministic whenever it finishes; if the time lim
 off, the answer depends on machine speed.
 
 **When it wins / loses.** Usually far faster than `dp` (on 10 medium generated instances it
-proved 8 optimal within 3 s, `dp` only 3), because the bound and a good incumbent prune most
+proved 9 optimal within 2 s, `dp` only 5), because the bound and a good incumbent prune most
 of the tree. It loses when the bound is loose: many inputless processes or tight worker
 limits (which the bound only prices) leave large gaps, and then it degrades to exhaustive
 search.
@@ -253,7 +253,8 @@ variant also fills idle workers greedily. The answer is the best of the two and
 rows; each pivot is `O(m (n + m))`.
 
 **When it wins / loses.** Gives the bound used to measure everyone's gap, and its rounding
-is excellent when the LP is nearly integral (it had the best mean on 10 medium instances).
+is excellent when the LP is nearly integral (it was the best heuristic on 10 medium
+instances, and even proved 3 of them optimal by meeting its own bound).
 The LP cannot see integrality: on tiny instances with large indivisible recipes the
 fractional plan rounds badly.
 
@@ -264,17 +265,27 @@ from `Heuristics.ReportGapAgainstExactOnSmallInstances`:
 
 | solver | mean gap % | optimal |
 |---|---|---|
-| greedy | 8.23 | 151/200 |
-| greedy_potential | 1.67 | 184/200 |
+| greedy | 6.94 | 145/200 |
+| greedy_potential | 1.93 | 173/200 |
 | beam_search | 0.00 | 200/200 |
-| simulated_annealing (2000 it.) | 0.34 | 196/200 |
-| lp_relaxation | 0.39 | 195/200 |
+| simulated_annealing (2000 it.) | 0.35 | 195/200 |
+| lp_relaxation | 0.02 | 198/200 |
 
-10 medium instances (seeds 1-10), 2 s limit, gap vs best known (`pf_compare --size medium`):
-`lp_relaxation` 1.05%, `beam_search` 1.76%, `simulated_annealing` 4.17%,
-`branch_and_bound` 5.01% (proves 8/10 optimal, but is far behind on the other two),
-`greedy_potential` 9.81%. `LpRelaxation.BoundIsAtLeastEverySolversEarnings` checks the LP
-bound against every solver on all hand-made, 200 small and 15 medium instances.
+10 medium instances (`pf_compare --size medium --count 10 --seed 1 --time-limit 2000`), gap
+vs the best known (the proven optimum where any solver proved one):
+
+| solver | mean gap % | max gap % | best found | proven | mean ms |
+|---|---|---|---|---|---|
+| greedy_potential | 16.23 | 50.93 | 0 | 0 | 0.006 |
+| beam_search | 3.59 | 23.89 | 7 | 0 | 3.3 |
+| simulated_annealing | 8.36 | 25.63 | 2 | 0 | 15.2 |
+| lp_relaxation | 1.37 | 5.65 | 6 | 3 | 3.6 |
+| branch_and_bound | 0.35 | 3.53 | 9 | 9 | 352 |
+| dp | 0.00 (5 solved) | | 5 | 5 | 1164 |
+
+`dp` failed on the other 5 (state limit or time limit), which it reports as an error rather
+than a schedule. `LpRelaxation.BoundIsAtLeastEverySolversEarnings` checks the LP bound
+against every solver on all hand-made, 200 small and 15 medium instances.
 
 ## Play-mode hints
 
@@ -318,13 +329,21 @@ the untouched start inventory), `runtime_ms`, `proven_optimal`, and `gap_pct`, w
 relative to the proven optimum when any solver proved one, otherwise to the best earnings
 found. Prints a per-solver summary table.
 
-Baseline numbers (200 small instances, seed 1, Apple M-series, Release):
+Baseline numbers (`pf_compare --count 200 --seed 1`, i.e. small seeds 1-200, Apple
+M-series, Release):
 
 | solver | mean gap % | max gap % | optimal hits | mean ms |
 |---|---|---|---|---|
-| greedy | 8.21 | 86.96 | 152/200 | 0.002 |
-| greedy_potential | 1.65 | 50.00 | 185/200 | 0.002 |
-| brute_force | 0.00 | 0.00 | 200/200 | 1.197 |
+| greedy | 6.94 | 88.00 | 145/200 | 0.001 |
+| greedy_potential | 1.93 | 50.00 | 173/200 | 0.001 |
+| brute_force | 0.00 | 0.00 | 200/200 | 1.457 |
+
+**Portable seeds.** Generated instances come from `pf::Random` (`pf/random.hpp`), not the
+`std::` distributions: those are implementation-defined, so the same seed gave different
+instances with libstdc++ and libc++. `Random.SameSequenceOnEveryPlatform` and
+`Random.GeneratedInstancesArePinned` pin the sequence and an instance fingerprint, so a
+seed now means the same instance on Linux CI and macOS. All numbers in this file were
+measured after that change.
 
 ---
 
@@ -342,13 +361,19 @@ cmake --build build-bench -j && build-bench/engine/bench/pf_bench
 
 | benchmark | work | before | after `canStart` | after compact state | speedup |
 |---|---|---|---|---|---|
-| `BM_DP/0` (factory) | 35 970 states | 245 ms | 143 ms | 40.2 ms | **6.1x** |
-| `BM_DP/1` | 1 451 states | 4.23 ms | 1.92 ms | 0.62 ms | **6.8x** |
-| `BM_DP/3` | 14 493 states | 47.9 ms | 27.1 ms | 7.49 ms | **6.4x** |
-| `BM_BranchAndBound/0` (factory) | 80 119 nodes | 77.5 ms | 57.9 ms | 12.6 ms | **6.2x** |
-| `BM_BranchAndBound/5` | 25 224 nodes | 26.7 ms | 20.4 ms | 4.69 ms | **5.7x** |
-| `BM_BranchAndBound/8` | 1.18 M nodes | 1456 ms | 1213 ms | 237 ms | **6.1x** |
-| `BM_BranchAndBound/10` | 66 333 nodes | 61.3 ms | 54.6 ms | 12.5 ms | **4.9x** |
+| `BM_DP/0` (factory) | 35 970 states | 257 ms | 143 ms | 39.2 ms | **6.6x** |
+| `BM_DP/2` | 744 199 states | 3925 ms | 2758 ms | 566 ms | **6.9x** |
+| `BM_DP/14` | 17 569 states | 63.5 ms | 30.1 ms | 11.0 ms | **5.8x** |
+| `BM_DP/15` | 187 671 states | 1021 ms | 474 ms | 150 ms | **6.8x** |
+| `BM_BranchAndBound/0` (factory) | 80 119 nodes | 86.3 ms | 55.0 ms | 12.8 ms | **6.7x** |
+| `BM_BranchAndBound/3` | 575 302 nodes | 810 ms | 651 ms | 131 ms | **6.2x** |
+| `BM_BranchAndBound/6` | 4.14 M nodes | 6529 ms | 5388 ms | 1148 ms | **5.7x** |
+| `BM_BranchAndBound/9` | 146 823 nodes | 171 ms | 141 ms | 31.5 ms | **5.4x** |
+| `BM_BranchAndBound/15` | 999 171 nodes | 1174 ms | 854 ms | 186 ms | **6.3x** |
+
+"Before" and "after `canStart`" were measured by rebuilding the earlier commits (`9e4c727`,
+`8fc1b04`) with the portable generator patched in, so all three columns run on exactly the
+same instances (the identical state and node counts confirm it).
 
 **What the profile showed** (macOS `sample` on `BM_BranchAndBound/8`, before): about 55% of
 samples in `malloc`/`free`, then `unordered_set::find` (pointer chasing through

@@ -1,16 +1,17 @@
 #include "pf/generator.hpp"
 
+#include "pf/random.hpp"
+
 #include <algorithm>
 #include <array>
 #include <map>
-#include <random>
 #include <string>
 
 namespace pf {
 
 GeneratorParams GeneratorParams::small(std::uint64_t seed) {
-  std::mt19937_64 rng(seed);
-  auto pick = [&](int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(rng); };
+  Random rng(seed);
+  auto pick = [&](int lo, int hi) { return rng.uniform(lo, hi); };
   GeneratorParams p;
   p.seed = seed;
   p.chain_depth = pick(1, 2);
@@ -121,9 +122,9 @@ class Builder {
  private:
   template <typename Int = int>
   Int integer(Int lo, Int hi) {
-    return std::uniform_int_distribution<Int>(lo, std::max(lo, hi))(rng_);
+    return rng_.uniform(lo, hi);
   }
-  bool chance(double probability) { return std::bernoulli_distribution(probability)(rng_); }
+  bool chance(double probability) { return rng_.chance(probability); }
 
   void addResource(std::int32_t r) {
     const std::int32_t level = levels_[static_cast<std::size_t>(r)];
@@ -180,7 +181,7 @@ class Builder {
   }
 
   GeneratorParams p_;
-  std::mt19937_64 rng_;
+  Random rng_;
   std::vector<std::int32_t> levels_;
   Instance instance_;
 };

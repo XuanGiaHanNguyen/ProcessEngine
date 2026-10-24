@@ -155,7 +155,7 @@ TEST_F(ServerTest, SolveReturnsValidatedSolutions) {
 
 TEST_F(ServerTest, CancelLongSolve) {
   // A large instance that no exact solver can finish within the test.
-  const Json instance = json::toJson(generate(GeneratorParams::large(2)).instance);
+  const Json instance = json::toJson(generate(GeneratorParams::large(1)).instance);
   const std::string id = post(port_, "/api/solve",
                               {{"instance", instance},
                                {"solvers", {"branch_and_bound", "dp"}},

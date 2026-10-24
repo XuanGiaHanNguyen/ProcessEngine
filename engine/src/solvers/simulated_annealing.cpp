@@ -1,12 +1,12 @@
 #include "pf/solvers/simulated_annealing.hpp"
 
+#include "pf/random.hpp"
 #include "pf/rules.hpp"
 #include "pf/solvers/greedy.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <numeric>
-#include <random>
 
 namespace pf {
 
@@ -63,13 +63,13 @@ class Annealer {
   bool accept(Quantity candidate, Quantity current, double temperature) {
     if (candidate >= current) return true;
     const double p = std::exp(static_cast<double>(candidate - current) / temperature);
-    return std::uniform_real_distribution<double>(0, 1)(rng_) < p;
+    return rng_.unit() < p;
   }
 
  private:
   template <typename Int = int>
   Int uniform(Int lo, Int hi) {
-    return std::uniform_int_distribution<Int>(lo, hi)(rng_);
+    return rng_.uniform(lo, hi);
   }
 
   /// Half the time an event tick of the schedule (0 or a completion), else any tick.
@@ -84,7 +84,7 @@ class Annealer {
   }
 
   const Instance& inst_;
-  std::mt19937_64 rng_;
+  Random rng_;
   std::vector<ProcessIndex> startable_;
 };
 
