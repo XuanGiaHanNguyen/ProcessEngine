@@ -12,7 +12,9 @@ endif()
 
 option(PF_BUILD_TESTS "Build ProcessForge tests" ON)
 option(PF_SANITIZE "Build with AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
+option(PF_BUILD_SERVER "Build the HTTP/WebSocket server" ON)
 option(PF_BUILD_BENCHMARKS "Build Google Benchmark suites" OFF)
+option(PF_SANITIZE_THREAD "Build with ThreadSanitizer" OFF)
 option(PF_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -24,6 +26,11 @@ if(PF_SANITIZE)
   add_link_options(-fsanitize=address,undefined)
 endif()
 
+if(PF_SANITIZE_THREAD)
+  add_compile_options(-fsanitize=thread -fno-omit-frame-pointer)
+  add_link_options(-fsanitize=thread)
+endif()
+
 if(PF_BUILD_TESTS)
   enable_testing()
   include(GoogleTest)
@@ -31,3 +38,6 @@ endif()
 
 add_subdirectory(engine)
 add_subdirectory(tools)
+if(PF_BUILD_SERVER)
+  add_subdirectory(server)
+endif()

@@ -51,6 +51,22 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
+  thread-sanitizer:
+    name: TSan (server)
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang-18
+      CXX: clang++-18
+      TSAN_OPTIONS: halt_on_error=1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DPF_SANITIZE_THREAD=ON
+      - name: Build
+        run: cmake --build build -j --target pf_server_tests
+      - name: Test
+        run: build/server/tests/pf_server_tests
+
   lint:
     name: clang-format + clang-tidy
     runs-on: ubuntu-24.04
