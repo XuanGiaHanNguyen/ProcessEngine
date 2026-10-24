@@ -60,6 +60,10 @@ class SimState {
   [[nodiscard]] const std::vector<std::int32_t>& runCounts() const { return run_counts_; }
   [[nodiscard]] std::int32_t freeWorkers() const;
 
+  /// True if `process` can start at the current tick. Same rules as checkStart(), without
+  /// building an error message (the fast path for solvers).
+  [[nodiscard]] bool canStart(ProcessIndex process) const;
+
   /// Returns why `process` cannot start at the current tick, or nullopt if it can.
   [[nodiscard]] std::optional<RuleError> checkStart(ProcessIndex process) const;
 

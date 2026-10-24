@@ -71,7 +71,7 @@ RawSolution BeamSearchSolver::solveRaw(const Instance& instance, const SolveOpti
       // (With nothing running, "advance" would end the game; that leaf is covered by the
       // rollout that scored this node.)
       for (ProcessIndex p = node.from; p < instance.processes.size(); ++p) {
-        if (node.state.checkStart(p)) continue;
+        if (!node.state.canStart(p)) continue;
         Node child{node.state, p, node.path, 0};
         child.state.start(p);
         child.path.push_back({p, node.state.tick()});

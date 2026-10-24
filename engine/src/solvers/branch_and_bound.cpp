@@ -93,7 +93,7 @@ class BranchAndBoundSearch::Impl {
       leaf(state);  // nothing running: starting nothing more ends the game
     }
     for (ProcessIndex p = from; p < o_.instance_.processes.size(); ++p) {
-      if (state.checkStart(p)) continue;
+      if (!state.canStart(p)) continue;
       SimState started = state;
       started.start(p);
       const Quantity b = o_.bound_.upperBound(started);

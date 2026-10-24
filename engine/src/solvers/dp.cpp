@@ -90,7 +90,7 @@ class DynamicProgram {
     if (*v > best.value) best = {*v, starts};  // ties keep the earlier (fewer starts) option
     // Option 2: start one more process p >= from.
     for (ProcessIndex p = from; p < instance_.processes.size(); ++p) {
-      if (state.checkStart(p)) continue;
+      if (!state.canStart(p)) continue;
       SimState child = state;
       child.start(p);
       starts.push_back(p);
