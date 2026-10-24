@@ -1,5 +1,6 @@
 add_executable(pf_engine_tests
   baseline_solvers_test.cpp
+  game_session_test.cpp
   json_io_test.cpp
   model_test.cpp
   registry_test.cpp
