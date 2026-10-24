@@ -3,17 +3,17 @@
 //
 //   cmake -B build-bench -DPF_BUILD_BENCHMARKS=ON -DPF_BUILD_TESTS=OFF
 //   cmake --build build-bench -j && build-bench/engine/bench/pf_bench
-#include <fstream>
-#include <sstream>
-#include <stdexcept>
-
-#include <benchmark/benchmark.h>
-
 #include "pf/bounds.hpp"
 #include "pf/generator.hpp"
 #include "pf/json_io.hpp"
 #include "pf/registry.hpp"
 #include "pf/validator.hpp"
+
+#include <fstream>
+#include <sstream>
+#include <stdexcept>
+
+#include <benchmark/benchmark.h>
 
 namespace {
 

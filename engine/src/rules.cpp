@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <tuple>
+#include <utility>
 
 namespace pf {
 
@@ -49,7 +50,7 @@ bool SimState::canStart(ProcessIndex process) const {
   const Process& p = instance_->processes[process];
   if (tick_ + p.duration > instance_->horizon) return false;
   if (p.max_runs && run_counts_[process] >= *p.max_runs) return false;
-  if (static_cast<std::int32_t>(active_.size()) >= instance_->workers) return false;
+  if (std::cmp_greater_equal(active_.size(), instance_->workers)) return false;
   for (const ResourceAmount& in : p.inputs) {
     if (inventory_[in.resource] < in.qty) return false;
   }

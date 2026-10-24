@@ -28,6 +28,12 @@ namespace pf {
 /// without inputs can only be paid for by lambda, so lambda is at least the smallest value
 /// that covers them (found by bisection). A few lambda values are kept and the smallest
 /// bound is used. See docs/solvers.md.
+/// A run in progress, as seen by DualBound: when it ends and what it produces.
+struct RunRef {
+  Tick end = 0;
+  ProcessIndex process = 0;
+};
+
 class DualBound {
  public:
   /// Builds the tables. Throws std::length_error if the tables would be too large
@@ -39,6 +45,10 @@ class DualBound {
   /// Upper bound on the final earnings reachable from `state` (an integer, rounded down
   /// with a small tolerance). Always >= the true optimum from that state.
   [[nodiscard]] Quantity upperBound(const SimState& state) const;
+  /// Same bound from raw parts: the tick, an inventory array (one entry per resource), and
+  /// the runs in progress (used by the solvers' compact states).
+  [[nodiscard]] Quantity upperBound(Tick tick, const Quantity* inventory,
+                                    const std::vector<RunRef>& running) const;
 
   /// The worker-tick prices in use (for docs and tests).
   [[nodiscard]] const std::vector<double>& lambdas() const { return lambdas_; }
@@ -52,7 +62,8 @@ class DualBound {
   [[nodiscard]] Table buildTable(double lambda) const;
   /// Smallest lambda' such that inputless processes satisfy condition (2) under table(lambda').
   [[nodiscard]] double generatorDemand(const Table& table) const;
-  [[nodiscard]] double bound(const Table& table, const SimState& state) const;
+  [[nodiscard]] double bound(const Table& table, Tick tick, const Quantity* inventory,
+                             const std::vector<RunRef>& running) const;
 
   const Instance* instance_;
   std::size_t resources_;
