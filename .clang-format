@@ -1,0 +1,16 @@
+---
+BasedOnStyle: Google
+ColumnLimit: 100
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^"pf/'
+    Priority: 1
+  - Regex: '^<(gtest|benchmark|nlohmann)/'
+    Priority: 3
+  - Regex: '^<.*\.h(pp)?>'
+    Priority: 3
+  - Regex: '^<'
+    Priority: 2
+  - Regex: '.*'
+    Priority: 4
+...
