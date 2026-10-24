@@ -156,3 +156,4 @@ jobs:
         with:
           name: playwright-report
           path: web/playwright-report
+
