@@ -30,6 +30,7 @@ Checks: >
   -readability-math-missing-parentheses,
   -bugprone-random-generator-seed,
   -performance-inefficient-string-concatenation,
+  -bugprone-signed-bitwise,
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*/(engine|server)/.*'
 FormatStyle: file

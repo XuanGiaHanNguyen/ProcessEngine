@@ -1,5 +1,7 @@
 #include "pf/game_session.hpp"
 
+#include "pf/bounds.hpp"
+#include "pf/solvers/branch_and_bound.hpp"
 #include "pf/solvers/greedy.hpp"
 #include "pf/validator.hpp"
 
@@ -210,14 +212,43 @@ void GameSession::restart() {
   redo_.clear();
 }
 
-std::optional<Action> GameSession::hint() const {
+std::optional<Hint> GameSession::hint(const std::string& solver, double time_limit_ms) const {
   if (finished()) return std::nullopt;
-  const PotentialValues potential(*instance_);
-  if (auto p = greedyChoice(sim(), GreedyScore::PotentialValuePerTick, &potential)) {
-    return Action::startRun(*p);
+  const SimState& now = sim();
+  Hint hint;
+  hint.solver = solver;
+  Schedule continuation;
+  if (solver == "greedy" || solver == "greedy_potential") {
+    const GreedyScore score =
+        solver == "greedy" ? GreedyScore::MarketValuePerTick : GreedyScore::PotentialValuePerTick;
+    const PotentialValues potential(*instance_);
+    Rollout r = greedyRollout(now, score, &potential);
+    continuation = std::move(r.runs);
+    hint.projected_earnings = r.earnings;
+  } else if (solver == "branch_and_bound") {
+    SolveOptions options;
+    options.time_limit_ms = time_limit_ms;
+    const Deadline deadline(options);
+    const DualBound bound(*instance_);
+    BranchAndBoundSearch search(*instance_, bound, deadline, nullptr,
+                                BranchAndBoundSolver::kDefaultMaxTranspositions);
+    SearchResult r = search.run(now);
+    continuation = std::move(r.runs);
+    hint.projected_earnings = r.earnings;
+    hint.optimal = r.completed;
+  } else {
+    return std::nullopt;
   }
-  if (sim().tick() >= instance_->horizon) return Action::finish();
-  return Action::advanceTo(sim().nextEventTick().value_or(instance_->horizon));
+
+  // Translate the first step of the continuation into a session action.
+  if (!continuation.empty() && continuation.front().start_tick == now.tick()) {
+    hint.action = Action::startRun(continuation.front().process);
+  } else if (!continuation.empty()) {
+    hint.action = Action::advanceTo(continuation.front().start_tick);
+  } else {
+    hint.action = Action::finish();  // nothing worth starting any more
+  }
+  return hint;
 }
 
 }  // namespace pf

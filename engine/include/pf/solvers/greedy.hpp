@@ -62,4 +62,13 @@ class PotentialValues {
 [[nodiscard]] std::optional<ProcessIndex> greedyChoice(const SimState& state, GreedyScore score,
                                                        const PotentialValues* potential);
 
+/// Runs greedy from `state` to the end: returns the runs it starts (with their ticks) and
+/// the earnings it reaches. Used for B&B incumbents and Play-mode hints.
+struct Rollout {
+  Schedule runs;
+  Quantity earnings = 0;
+};
+[[nodiscard]] Rollout greedyRollout(SimState state, GreedyScore score,
+                                    const PotentialValues* potential);
+
 }  // namespace pf

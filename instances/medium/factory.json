@@ -1,7 +1,7 @@
 {
   "name": "Factory",
   "description": "Five processes, generators with no inputs, a three-level chain, and three workers.",
-  "comment": "Optimum unknown (too large to do by hand). The reference schedule is hand-simulated: smelt@0 x2 uses all 4 ore and 2 coal; dig_coal@0 yields 1 coal at tick 1; at tick 2 the 2 iron and 1 coal feed forge@2, which yields 1 steel at tick 5. Final inventory: 1 steel -> 15.",
+  "comment": "Optimum 45 was computed by the dp and branch_and_bound solvers (they agree), not by hand; it is too large to do by hand. The first reference schedule is hand-simulated: smelt@0 x2 uses all 4 ore and 2 coal; dig_coal@0 yields 1 coal at tick 1; at tick 2 the 2 iron and 1 coal feed forge@2, which yields 1 steel at tick 5. Final inventory: 1 steel -> 15.",
   "resources": [
     {"id": "ore", "name": "Ore", "sell_price": 0},
     {"id": "coal", "name": "Coal", "sell_price": 0},
@@ -25,6 +25,32 @@
       {"process_id": "smelt", "start_tick": 0},
       {"process_id": "dig_coal", "start_tick": 0},
       {"process_id": "forge", "start_tick": 2}
-    ], "earnings": 15, "optimal": false}
+    ], "earnings": 15, "optimal": false},
+    {"source": "solver", "runs": [
+      {"process_id": "dig_coal", "start_tick": 0},
+      {"process_id": "dig_coal", "start_tick": 0},
+      {"process_id": "dig_coal", "start_tick": 0},
+      {"process_id": "dig_coal", "start_tick": 1},
+      {"process_id": "dig_coal", "start_tick": 1},
+      {"process_id": "dig_coal", "start_tick": 1},
+      {"process_id": "dig_coal", "start_tick": 2},
+      {"process_id": "smelt", "start_tick": 2},
+      {"process_id": "smelt", "start_tick": 2},
+      {"process_id": "mine", "start_tick": 3},
+      {"process_id": "mine", "start_tick": 4},
+      {"process_id": "mine", "start_tick": 4},
+      {"process_id": "mine", "start_tick": 4},
+      {"process_id": "mine", "start_tick": 5},
+      {"process_id": "mine", "start_tick": 5},
+      {"process_id": "smelt", "start_tick": 5},
+      {"process_id": "mine", "start_tick": 6},
+      {"process_id": "mine", "start_tick": 6},
+      {"process_id": "smelt", "start_tick": 7},
+      {"process_id": "smelt", "start_tick": 7},
+      {"process_id": "smelt", "start_tick": 7},
+      {"process_id": "forge", "start_tick": 9},
+      {"process_id": "forge", "start_tick": 9},
+      {"process_id": "forge", "start_tick": 9}
+    ], "earnings": 45, "optimal": true}
   ]
 }

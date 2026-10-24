@@ -1,6 +1,8 @@
 #include "pf/registry.hpp"
 
+#include "pf/solvers/branch_and_bound.hpp"
 #include "pf/solvers/brute_force.hpp"
+#include "pf/solvers/dp.hpp"
 #include "pf/solvers/greedy.hpp"
 
 #include <stdexcept>
@@ -52,6 +54,19 @@ SolverRegistry makeBuiltin() {
          {{"max_nodes", "Give up after this many search nodes.",
            static_cast<double>(BruteForceSolver::kDefaultMaxNodes)}}},
         [] { return std::make_unique<BruteForceSolver>(); });
+  r.add({"dp",
+         "Dynamic programming over memoized event states (tick, inventory, runs in progress).",
+         true,
+         {{"max_states", "Fail cleanly after storing this many states.",
+           static_cast<double>(DPSolver::kDefaultMaxStates)}}},
+        [] { return std::make_unique<DPSolver>(); });
+  r.add({"branch_and_bound",
+         "Depth-first branch and bound with a dual (potential) upper bound, best-first child "
+         "order and a greedy incumbent. Anytime.",
+         true,
+         {{"max_transpositions", "Cap on remembered fully-searched states.",
+           static_cast<double>(BranchAndBoundSolver::kDefaultMaxTranspositions)}}},
+        [] { return std::make_unique<BranchAndBoundSolver>(); });
   return r;
 }
 

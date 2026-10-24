@@ -71,6 +71,14 @@ struct SessionState {
   bool operator==(const SessionState&) const = default;
 };
 
+/// A suggested next move and what following the suggesting solver from here would earn.
+struct Hint {
+  Action action;
+  Quantity projected_earnings = 0;
+  bool optimal = false;  ///< the projected earnings are the proven best from this state
+  std::string solver;
+};
+
 /// Interactive, undoable simulator for Play mode. Uses SimState, the same rule code as the
 /// validator, so a manual game and a solver schedule are scored identically.
 ///
@@ -121,10 +129,13 @@ class GameSession {
   /// Back to tick 0 with an empty history and redo list.
   void restart();
 
-  /// A suggested next action from the current state: the legal start with the best
-  /// time-aware potential gain per tick, otherwise advance to the next event.
-  /// (Milestone 4 will offer exact-solver hints on the residual problem.)
-  [[nodiscard]] std::optional<Action> hint() const;
+  /// Suggests the next action from the current state, using `solver`:
+  ///  - "branch_and_bound" (default): searches the remaining game exactly from the current
+  ///    state; if the time limit runs out it falls back to its best continuation so far.
+  ///  - "greedy" / "greedy_potential": the greedy choice.
+  /// Returns nullopt if the game is finished or the solver name is unknown.
+  [[nodiscard]] std::optional<Hint> hint(const std::string& solver = "branch_and_bound",
+                                         double time_limit_ms = 250) const;
 
   /// Converts a schedule into the session actions that reproduce it.
   [[nodiscard]] static std::vector<Action> actionsFor(const Schedule& schedule);

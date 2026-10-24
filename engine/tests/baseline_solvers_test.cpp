@@ -227,8 +227,8 @@ TEST_P(BaselineOnHandMade, AllSolversValidAndBruteForceIsOptimal) {
   options.time_limit_ms = 2000;
   const Solution bf = run("brute_force", inst, options);
   if (!bf.valid || !bf.proven_optimal) {
-    // Only acceptable on instances too big for exhaustive search (no hand-computed optimum).
-    EXPECT_FALSE(known_optimum.has_value()) << bf.error.value_or("timed out");
+    // Only acceptable on instances too big for exhaustive search.
+    EXPECT_EQ(GetParam().parent_path().filename(), "medium") << bf.error.value_or("timed out");
     return;
   }
   if (known_optimum) {
