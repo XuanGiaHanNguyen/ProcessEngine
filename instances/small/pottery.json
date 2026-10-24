@@ -1,0 +1,35 @@
+{
+  "name": "Pottery",
+  "description": "A capped fast process (max_runs) competing with a slower one for one worker; includes start money.",
+  "comment": "Hand-computed optimum = 27. Both processes gain +2 per run: kiln (1 clay -> 1 brick, 1 tick, max 3 runs) and pot (2 clay -> 1 pot, 2 ticks). With k kilns and p pots: k <= 3, k + 2p <= 10 (both the clay and the tick budget). Max k + p = 6 (k=3,p=3 or k=2,p=4). Earnings = start_money 5 + 10 clay + 2*6 = 27.",
+  "resources": [
+    {"id": "clay", "name": "Clay", "sell_price": 1},
+    {"id": "brick", "name": "Brick", "sell_price": 3},
+    {"id": "pot", "name": "Pot", "sell_price": 4}
+  ],
+  "processes": [
+    {"id": "kiln", "name": "Fire brick", "inputs": {"clay": 1}, "outputs": {"brick": 1}, "duration": 1, "max_runs": 3},
+    {"id": "throw_pot", "name": "Throw pot", "inputs": {"clay": 2}, "outputs": {"pot": 1}, "duration": 2}
+  ],
+  "start_inventory": {"clay": 10},
+  "workers": 1,
+  "horizon": 10,
+  "start_money": 5,
+  "reference_solutions": [
+    {"runs": [
+      {"process_id": "kiln", "start_tick": 0},
+      {"process_id": "kiln", "start_tick": 1},
+      {"process_id": "kiln", "start_tick": 2},
+      {"process_id": "throw_pot", "start_tick": 3},
+      {"process_id": "throw_pot", "start_tick": 5},
+      {"process_id": "throw_pot", "start_tick": 7}
+    ], "earnings": 27, "optimal": true},
+    {"runs": [
+      {"process_id": "throw_pot", "start_tick": 0},
+      {"process_id": "throw_pot", "start_tick": 2},
+      {"process_id": "throw_pot", "start_tick": 4},
+      {"process_id": "throw_pot", "start_tick": 6},
+      {"process_id": "throw_pot", "start_tick": 8}
+    ], "earnings": 25, "optimal": false}
+  ]
+}

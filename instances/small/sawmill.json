@@ -1,0 +1,19 @@
+{
+  "name": "Sawmill",
+  "description": "Smallest useful instance: one worker turns wood into planks.",
+  "comment": "Hand-computed optimum = 8. Each 'saw' run takes 2 ticks, so 1 worker and horizon 4 allow at most 2 runs. Each run turns 2 wood (value 2) into 1 plank (value 4), +2 each. Start value 4 wood * 1 = 4, so the best is 4 + 2*2 = 8, achieved by saw@0, saw@2.",
+  "resources": [
+    {"id": "wood", "name": "Wood", "sell_price": 1},
+    {"id": "plank", "name": "Plank", "sell_price": 4}
+  ],
+  "processes": [
+    {"id": "saw", "name": "Saw planks", "inputs": {"wood": 2}, "outputs": {"plank": 1}, "duration": 2}
+  ],
+  "start_inventory": {"wood": 4},
+  "workers": 1,
+  "horizon": 4,
+  "reference_solutions": [
+    {"runs": [{"process_id": "saw", "start_tick": 0}, {"process_id": "saw", "start_tick": 2}], "earnings": 8, "optimal": true},
+    {"runs": [], "earnings": 4, "optimal": false}
+  ]
+}

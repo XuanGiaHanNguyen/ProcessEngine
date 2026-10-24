@@ -1,0 +1,20 @@
+{
+  "name": "Kitchen",
+  "description": "Horizon trap: the most valuable process is too slow to finish before T.",
+  "comment": "Hand-computed optimum = 6. 'hatch' (egg -> chicken worth 20) takes 10 ticks but T = 5, so it can never be scheduled. The only useful move is 'fry' (egg worth 1 -> omelette worth 3, 1 tick); both eggs can be fried: 2 * 3 = 6.",
+  "resources": [
+    {"id": "egg", "name": "Egg", "sell_price": 1},
+    {"id": "omelette", "name": "Omelette", "sell_price": 3},
+    {"id": "chicken", "name": "Chicken", "sell_price": 20}
+  ],
+  "processes": [
+    {"id": "hatch", "name": "Hatch", "inputs": {"egg": 1}, "outputs": {"chicken": 1}, "duration": 10},
+    {"id": "fry", "name": "Fry", "inputs": {"egg": 1}, "outputs": {"omelette": 1}, "duration": 1}
+  ],
+  "start_inventory": {"egg": 2},
+  "workers": 1,
+  "horizon": 5,
+  "reference_solutions": [
+    {"runs": [{"process_id": "fry", "start_tick": 0}, {"process_id": "fry", "start_tick": 1}], "earnings": 6, "optimal": true}
+  ]
+}

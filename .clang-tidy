@@ -19,6 +19,15 @@ Checks: >
   -readability-magic-numbers,
   -readability-function-cognitive-complexity,
   -readability-uppercase-literal-suffix,
+  -readability-braces-around-statements,
+  -readability-trailing-comma,
+  -readability-implicit-bool-conversion,
+  -readability-convert-member-functions-to-static,
+  -modernize-use-designated-initializers,
+  -modernize-use-ranges,
+  -misc-const-correctness,
+  -misc-use-anonymous-namespace,
+  -readability-math-missing-parentheses,
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*/(engine|server)/.*'
 FormatStyle: file

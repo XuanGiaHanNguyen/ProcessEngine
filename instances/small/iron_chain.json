@@ -1,0 +1,30 @@
+{
+  "name": "Iron chain",
+  "description": "A two-step chain (ore -> iron -> steel) with two workers.",
+  "comment": "Hand-computed optimum = 13. 6 ore allow at most 3 smelts, so at most 3 iron are ever made. Final value is 10*steel + 3*iron with 2*steel + iron <= 3, maximized at steel=1, iron=1 -> 13. Schedule: smelt@0 twice (2 iron at tick 2), forge@2 (steel at tick 5 <= 6), smelt@2 (iron at tick 4).",
+  "resources": [
+    {"id": "ore", "name": "Iron ore", "sell_price": 0},
+    {"id": "iron", "name": "Iron", "sell_price": 3},
+    {"id": "steel", "name": "Steel", "sell_price": 10}
+  ],
+  "processes": [
+    {"id": "smelt", "name": "Smelt", "inputs": {"ore": 2}, "outputs": {"iron": 1}, "duration": 2},
+    {"id": "forge", "name": "Forge steel", "inputs": {"iron": 2}, "outputs": {"steel": 1}, "duration": 3}
+  ],
+  "start_inventory": {"ore": 6},
+  "workers": 2,
+  "horizon": 6,
+  "reference_solutions": [
+    {"runs": [
+      {"process_id": "smelt", "start_tick": 0},
+      {"process_id": "smelt", "start_tick": 0},
+      {"process_id": "forge", "start_tick": 2},
+      {"process_id": "smelt", "start_tick": 2}
+    ], "earnings": 13, "optimal": true},
+    {"runs": [
+      {"process_id": "smelt", "start_tick": 0},
+      {"process_id": "smelt", "start_tick": 0},
+      {"process_id": "smelt", "start_tick": 2}
+    ], "earnings": 9, "optimal": false}
+  ]
+}
