@@ -14,6 +14,9 @@ Solvers are listed and constructed by name through `SolverRegistry::builtin()`.
 | `brute_force` | yes (tiny only) | 2 | exhaustive search, ground truth for tests |
 | `dp` | yes | 4 | memoized DP over event states |
 | `branch_and_bound` | yes (anytime) | 4 | DFS + dual upper bound + greedy incumbent |
+| `beam_search` | no | 5 | beam over the event tree, rollout-scored |
+| `simulated_annealing` | no | 5 | local search over schedules with rule-based repair |
+| `lp_relaxation` | no (proves when tight) | 5 | time-indexed LP bound + LP-guided rounding |
 
 Notation: `P` processes, `R` resources, `W` workers, horizon `T`, `E` = number of event
 ticks visited (tick 0 plus every tick at which a run completes; `E <= T + 1`).
@@ -189,6 +192,89 @@ limits (which the bound only prices) leave large gaps, and then it degrades to e
 search.
 
 ---
+
+## Beam search (`beam_search`)
+
+**Algorithm.** Breadth-limited search over the same `(state, from)` tree as B&B, one action
+per level (start one process, or advance to the next completion). Each child is scored by a
+`greedy_potential` rollout from it; the rollout is itself a complete schedule, so the best
+one seen is the answer (it is never worse than plain greedy). The `beam_width` best children
+(default 16) survive; children with the same canonical key are merged.
+
+**Complexity.** `O(L * B * P * rollout)` with `L` levels (about the number of runs plus
+events), `B` the width, and a rollout costing `O(E * P)`.
+
+**When it wins / loses.** The strongest heuristic on small and medium instances (it found
+the optimum on all 200 small test instances). Rollout scoring can mislead it when a good
+plan needs several "sacrifice" moves before the greedy rollout sees the payoff.
+
+## Simulated annealing (`simulated_annealing`)
+
+**Representation.** A list of `{process, start_tick}` runs. **Moves** (uniformly chosen):
+insert a run (random process; half the time at an event tick of the current schedule),
+remove a run, shift a run's start by -3..3 ticks, or change a run's process.
+**Repair.** The candidate is replayed in start order through `SimState`; any run illegal at
+that point (inputs, worker, horizon, max_runs) is dropped. So every candidate is valid and
+scored exactly. **Acceptance** is Metropolis; **cooling** is geometric from
+`initial_temperature` (0 = 5% of the starting earnings) to
+`initial_temperature * final_temperature_ratio` (default 1e-3) over `iterations` steps
+(default 20 000). It starts from the `greedy_potential` schedule and returns the best
+schedule visited.
+
+**Complexity.** `O(iterations * n * (log n + I + O))` for schedules of `n` runs.
+Seeded by `SolveOptions::seed`; deterministic when the iteration budget ends the run.
+
+**When it wins / loses.** Robust on medium/large instances where tree search cannot get
+deep. Weak at long dependent chains: a single move rarely creates a whole profitable chain,
+and repair drops downstream runs when an upstream one moves.
+
+## LP relaxation (`lp_relaxation`)
+
+**Model.** Variables `x[p][t] >= 0` for `t in [0, T - d_p]` (fractional runs). Maximize the
+start value plus `sum net_market_value(p) * x[p][t]` subject to: inventory never negative
+at any tick `< T` for every consumed resource (outputs count from `t + d_p`), at most `W`
+runs in progress at each tick, and `sum_t x[p][t] <= max_runs`. Every valid schedule is an
+integer point of this LP, so the LP optimum is an upper bound. Since `b >= 0` the slack
+basis is feasible, and a small in-house dense primal simplex (Dantzig, falling back to
+Bland after 50 degenerate pivots) solves it, with no new dependency.
+
+**Rigorous bound.** The reported `lp_bound` is computed from the dual solution `y >= 0`:
+`c.x <= y.b + W * sum_j max(0, c_j - (A^T y)_j)` (every `x_j <= W` by the worker rows), so it
+is valid even if the simplex stopped early or rounding errors left `y` slightly infeasible.
+It is then capped by the `DualBound` (both are valid, so the minimum is). LPs above 6e6
+tableau entries are skipped and the `DualBound` alone is reported (`lp_too_large = 1`).
+
+**Rounding.** Walk the ticks accumulating each process's LP mass; start a run when a
+process has accumulated `>= 0.5` and the start is legal (largest mass first). A second
+variant also fills idle workers greedily. The answer is the best of the two and
+`greedy_potential`. `proven_optimal` is set when the schedule reaches `lp_bound`.
+
+**Complexity.** Tableau `m x (n + m)` with `n ~ P*T` variables and `m ~ R_consumed*T + T + caps`
+rows; each pivot is `O(m (n + m))`.
+
+**When it wins / loses.** Gives the bound used to measure everyone's gap, and its rounding
+is excellent when the LP is nearly integral (it had the best mean on 10 medium instances).
+The LP cannot see integrality: on tiny instances with large indivisible recipes the
+fractional plan rounds badly.
+
+## Measured gaps (M5 acceptance)
+
+200 small generated instances (seeds 0-199), gap vs the `branch_and_bound` optimum,
+from `Heuristics.ReportGapAgainstExactOnSmallInstances`:
+
+| solver | mean gap % | optimal |
+|---|---|---|
+| greedy | 8.23 | 151/200 |
+| greedy_potential | 1.67 | 184/200 |
+| beam_search | 0.00 | 200/200 |
+| simulated_annealing (2000 it.) | 0.34 | 196/200 |
+| lp_relaxation | 0.39 | 195/200 |
+
+10 medium instances (seeds 1-10), 2 s limit, gap vs best known (`pf_compare --size medium`):
+`lp_relaxation` 1.05%, `beam_search` 1.76%, `simulated_annealing` 4.17%,
+`branch_and_bound` 5.01% (proves 8/10 optimal, but is far behind on the other two),
+`greedy_potential` 9.81%. `LpRelaxation.BoundIsAtLeastEverySolversEarnings` checks the LP
+bound against every solver on all hand-made, 200 small and 15 medium instances.
 
 ## Play-mode hints
 
