@@ -1,6 +1,8 @@
 add_executable(pf_engine_tests
+  baseline_solvers_test.cpp
   json_io_test.cpp
   model_test.cpp
+  registry_test.cpp
   rules_test.cpp
   instances_test.cpp
   validator_test.cpp
