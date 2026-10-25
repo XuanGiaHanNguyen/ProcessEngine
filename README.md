@@ -35,8 +35,8 @@ cd web && npm ci && npm start                         # UI on :4200, proxies /ap
 
 ## What you can do
 
-**Factory mode** (the landing page): five levels, from one stuffed-animal line to a
-four-toy factory on a budget. Click an empty slot to build a machine, a supplier to set
+**Factory mode** (the landing page): two levels, Easy (one stuffed-animal line) and Hard
+(four toys from five raw materials). Click an empty slot to build a machine, a supplier to set
 its hourly order, a belt to change how a node splits its output; drag from one node to
 another to lay a belt. Every edit is checked by the server, with reasons ("s3 gets no
 Fabric"). **Test factory** runs the design through the engine's `FactorySim`, adds it to
@@ -86,11 +86,8 @@ Across generated instances (details and methodology in [docs/solvers.md](docs/so
 
 | Level | Initial design | `greedy` | `local_search` | `flow_lp` | Upper bound |
 |---|---|---|---|---|---|
-| First Stitch | $16.20 | $99.80 | $116.20 | $85.80 | $317.51 |
-| Up and Away | $67.80 | $184.40 | $184.40 | $105.20 | $389.46 |
-| Rock Band | $6.40 | $183.00 | $224.60 | $219.00 | $639.40 |
-| Full Line | $213.40 | $311.40 | $321.80 | $230.00 | $795.69 |
-| Tight Budget | $7.40 | $205.60 | $232.60 | $205.60 | $569.65 |
+| Easy: First Stitch | $16.20 | $99.80 | $116.20 | $116.20 | $317.51 |
+| Hard: Full Line | $213.40 | $311.40 | $321.80 | $230.00 | $795.69 |
 
 ## Benchmarks
 

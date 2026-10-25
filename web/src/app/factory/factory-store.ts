@@ -73,7 +73,6 @@ export class FactoryStore {
 
   readonly canUndo = computed(() => this.past().length > 0);
   readonly canRedo = computed(() => this.future().length > 0);
-  readonly levelIndex = computed(() => this.levels().findIndex((l) => l.id === this.level()?.id));
   readonly buildCost = computed(() => {
     const level = this.level();
     const draft = this.draft();

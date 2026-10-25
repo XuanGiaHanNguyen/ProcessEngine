@@ -83,7 +83,7 @@ TEST(FactorySolvers, SolversBeatTheInitialDesigns) {
 
 TEST(FactorySolvers, GreedyIsDeterministic) {
   const auto levels = loadLevels();
-  const Level& level = levels[2].level;
+  const Level& level = levels[1].level;
   const auto a = makeFactorySolver("greedy")->solve(level, quick(5000));
   const auto b = makeFactorySolver("greedy")->solve(level, quick(5000));
   EXPECT_EQ(a.design, b.design);
@@ -95,7 +95,7 @@ TEST(FactorySolvers, CancelStopsLocalSearch) {
   std::atomic<bool> cancel{true};
   SolveOptions o = quick(60'000);
   o.cancel = &cancel;
-  const auto s = makeFactorySolver("local_search")->solve(levels[3].level, o);
+  const auto s = makeFactorySolver("local_search")->solve(levels[1].level, o);
   EXPECT_TRUE(s.valid);
   EXPECT_LT(s.runtime_ms, 5000);
 }

@@ -112,10 +112,10 @@ test('drafts are remembered and levels can be switched', async ({ page, problems
   await page.reload();
   await expect(node(page, 'String').locator('.badge-main')).toHaveText('6/h');
 
-  await page.getByRole('button', { name: 'Next level' }).click();
-  await expect(page.getByRole('heading', { name: 'Up and Away' })).toBeVisible();
-  await expect(node(page, 'Wood')).toBeVisible();
-  await page.getByRole('button', { name: 'Previous level' }).click();
+  await page.getByRole('tab', { name: /Hard/ }).click();
+  await expect(page.getByRole('heading', { name: 'Full Line' })).toBeVisible();
+  await expect(node(page, 'Rubber')).toBeVisible();
+  await page.getByRole('tab', { name: /Easy/ }).click();
   await expect(page.getByRole('heading', { name: 'First Stitch' })).toBeVisible();
   expect(problems).toEqual([]);
 });
