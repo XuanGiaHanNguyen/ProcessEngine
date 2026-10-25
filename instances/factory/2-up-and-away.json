@@ -153,44 +153,41 @@
     {
       "name": "Best known",
       "design": {
-        "orders": {"cotton-supply": 12, "string-supply": 6},
-        "machines": [
-          {"slot": "s1", "type": "loom", "recipe": "fabric"},
-          {"slot": "s2", "type": "loom", "recipe": "fabric"},
-          {"slot": "s3", "type": "carder", "recipe": "stuffing"},
-          {"slot": "s4", "type": "carder", "recipe": "stuffing"},
-          {"slot": "s5", "type": "sewing", "recipe": "stuffed-animal"},
-          {"slot": "s6", "type": "sewing", "recipe": "stuffed-animal"},
-          {"slot": "s7", "type": "sewing", "recipe": "stuffed-animal"}
-        ],
         "belts": [
-          {"from": "cotton-supply", "to": "s1", "resource": "cotton", "weight": 1},
-          {"from": "cotton-supply", "to": "s2", "resource": "cotton", "weight": 1},
-          {"from": "cotton-supply", "to": "s3", "resource": "cotton", "weight": 1},
-          {"from": "cotton-supply", "to": "s4", "resource": "cotton", "weight": 1},
-          {"from": "string-supply", "to": "s1", "resource": "string", "weight": 1},
-          {"from": "string-supply", "to": "s2", "resource": "string", "weight": 1},
-          {"from": "string-supply", "to": "s5", "resource": "string", "weight": 1},
-          {"from": "string-supply", "to": "s6", "resource": "string", "weight": 1},
-          {"from": "string-supply", "to": "s7", "resource": "string", "weight": 1},
-          {"from": "s1", "to": "s5", "resource": "fabric", "weight": 1},
-          {"from": "s1", "to": "s6", "resource": "fabric", "weight": 1},
-          {"from": "s1", "to": "s7", "resource": "fabric", "weight": 1},
-          {"from": "s2", "to": "s5", "resource": "fabric", "weight": 1},
-          {"from": "s2", "to": "s6", "resource": "fabric", "weight": 1},
-          {"from": "s2", "to": "s7", "resource": "fabric", "weight": 1},
-          {"from": "s3", "to": "s5", "resource": "stuffing", "weight": 1},
-          {"from": "s3", "to": "s6", "resource": "stuffing", "weight": 1},
-          {"from": "s3", "to": "s7", "resource": "stuffing", "weight": 1},
-          {"from": "s4", "to": "s5", "resource": "stuffing", "weight": 1},
-          {"from": "s4", "to": "s6", "resource": "stuffing", "weight": 1},
-          {"from": "s4", "to": "s7", "resource": "stuffing", "weight": 1},
-          {"from": "s5", "to": "market", "resource": "stuffed-animal", "weight": 1},
-          {"from": "s6", "to": "market", "resource": "stuffed-animal", "weight": 1},
-          {"from": "s7", "to": "market", "resource": "stuffed-animal", "weight": 1}
-        ]
+          {"from": "cotton-supply", "resource": "cotton", "to": "s1", "weight": 1},
+          {"from": "cotton-supply", "resource": "cotton", "to": "s2", "weight": 1},
+          {"from": "cotton-supply", "resource": "cotton", "to": "s4", "weight": 1},
+          {"from": "string-supply", "resource": "string", "to": "s2", "weight": 1},
+          {"from": "string-supply", "resource": "string", "to": "s4", "weight": 1},
+          {"from": "string-supply", "resource": "string", "to": "s5", "weight": 1},
+          {"from": "string-supply", "resource": "string", "to": "s6", "weight": 1},
+          {"from": "string-supply", "resource": "string", "to": "s7", "weight": 1},
+          {"from": "wood-supply", "resource": "wood", "to": "s3", "weight": 1},
+          {"from": "s2", "resource": "fabric", "to": "s5", "weight": 1},
+          {"from": "s2", "resource": "fabric", "to": "s6", "weight": 1},
+          {"from": "s2", "resource": "fabric", "to": "s7", "weight": 1},
+          {"from": "s4", "resource": "fabric", "to": "s5", "weight": 1},
+          {"from": "s4", "resource": "fabric", "to": "s6", "weight": 1},
+          {"from": "s4", "resource": "fabric", "to": "s7", "weight": 1},
+          {"from": "s1", "resource": "stuffing", "to": "s5", "weight": 1},
+          {"from": "s1", "resource": "stuffing", "to": "s7", "weight": 1},
+          {"from": "s3", "resource": "dowel", "to": "s6", "weight": 1},
+          {"from": "s5", "resource": "stuffed-animal", "to": "market", "weight": 1},
+          {"from": "s7", "resource": "stuffed-animal", "to": "market", "weight": 1},
+          {"from": "s6", "resource": "kite", "to": "market", "weight": 1}
+        ],
+        "machines": [
+          {"recipe": "stuffing", "slot": "s1", "type": "carder"},
+          {"recipe": "fabric", "slot": "s2", "type": "loom"},
+          {"recipe": "dowel", "slot": "s3", "type": "woodshop"},
+          {"recipe": "fabric", "slot": "s4", "type": "loom"},
+          {"recipe": "stuffed-animal", "slot": "s5", "type": "sewing"},
+          {"recipe": "kite", "slot": "s6", "type": "sewing"},
+          {"recipe": "stuffed-animal", "slot": "s7", "type": "sewing"}
+        ],
+        "orders": {"cotton-supply": 9, "string-supply": 7, "wood-supply": 1}
       },
-      "profit": 13480
+      "profit": 18440
     },
     {
       "name": "Alternative 1",

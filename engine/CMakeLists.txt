@@ -3,6 +3,7 @@ add_library(pf_engine
   src/bounds.cpp
   src/factory/level.cpp
   src/factory/sim.cpp
+  src/factory/solvers.cpp
   src/game_session.cpp
   src/generator.cpp
   src/model.cpp
