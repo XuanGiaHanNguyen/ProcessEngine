@@ -1,0 +1,238 @@
+{
+  "format": "processforge-factory/1",
+  "id": "rock-band",
+  "name": "Rock Band",
+  "description": "Guitars take time to build. Keep the slow bench busy.",
+  "hours": 24,
+  "belt_capacity": 10,
+  "buffer_batches": 2,
+  "budget": null,
+  "resources": [
+    {"id": "cotton", "name": "Cotton", "kind": "raw"},
+    {"id": "string", "name": "String", "kind": "raw"},
+    {"id": "plastic", "name": "Plastic", "kind": "raw"},
+    {"id": "wood", "name": "Wood", "kind": "raw"},
+    {"id": "fabric", "name": "Fabric", "kind": "part"},
+    {"id": "stuffing", "name": "Stuffing", "kind": "part"},
+    {"id": "guitar-body", "name": "Guitar body", "kind": "part"},
+    {"id": "offcut", "name": "Wood offcut", "kind": "part"},
+    {"id": "pegs", "name": "Tuning pegs", "kind": "part"},
+    {"id": "stuffed-animal", "name": "Stuffed animal", "kind": "product"},
+    {"id": "toy-guitar", "name": "Toy guitar", "kind": "product"}
+  ],
+  "suppliers": [
+    {
+      "id": "cotton-supply",
+      "resource": "cotton",
+      "max_rate": 40,
+      "unit_cost": 40,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "string-supply",
+      "resource": "string",
+      "max_rate": 24,
+      "unit_cost": 25,
+      "x": 0,
+      "y": 2
+    },
+    {
+      "id": "plastic-supply",
+      "resource": "plastic",
+      "max_rate": 20,
+      "unit_cost": 50,
+      "x": 0,
+      "y": 4
+    },
+    {"id": "wood-supply", "resource": "wood", "max_rate": 16, "unit_cost": 80, "x": 0, "y": 6}
+  ],
+  "machine_types": [
+    {
+      "id": "loom",
+      "name": "Loom",
+      "cost": 1500,
+      "recipes": [
+        {
+          "id": "fabric",
+          "name": "Weave fabric",
+          "inputs": {"cotton": 4, "string": 2},
+          "outputs": {"fabric": 2},
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "carder",
+      "name": "Carder",
+      "cost": 1000,
+      "recipes": [
+        {
+          "id": "stuffing",
+          "name": "Card stuffing",
+          "inputs": {"cotton": 3},
+          "outputs": {"stuffing": 4},
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "sewing",
+      "name": "Sewing station",
+      "cost": 2000,
+      "recipes": [
+        {
+          "id": "stuffed-animal",
+          "name": "Sew stuffed animals",
+          "inputs": {"fabric": 2, "stuffing": 4, "string": 2},
+          "outputs": {"stuffed-animal": 2},
+          "hours": 2
+        }
+      ]
+    },
+    {
+      "id": "woodshop",
+      "name": "Woodshop",
+      "cost": 1800,
+      "recipes": [
+        {
+          "id": "guitar-body",
+          "name": "Carve a guitar body",
+          "inputs": {"wood": 3},
+          "outputs": {"guitar-body": 1, "offcut": 1},
+          "hours": 2
+        }
+      ]
+    },
+    {
+      "id": "molder",
+      "name": "Molder",
+      "cost": 1200,
+      "recipes": [
+        {
+          "id": "pegs",
+          "name": "Mold tuning pegs",
+          "inputs": {"plastic": 1},
+          "outputs": {"pegs": 4},
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "assembly",
+      "name": "Assembly bench",
+      "cost": 2500,
+      "recipes": [
+        {
+          "id": "toy-guitar",
+          "name": "Assemble a toy guitar",
+          "inputs": {"guitar-body": 1, "string": 3, "pegs": 4},
+          "outputs": {"toy-guitar": 1},
+          "hours": 2
+        }
+      ]
+    }
+  ],
+  "market": {
+    "x": 12,
+    "y": 3,
+    "listings": [
+      {"resource": "stuffed-animal", "price": 900, "demand": 2, "overflow_price": 500},
+      {"resource": "toy-guitar", "price": 2800, "demand": 1, "overflow_price": 1600},
+      {"resource": "offcut", "price": 10, "demand": 99, "overflow_price": 10}
+    ]
+  },
+  "slots": [
+    {"id": "s1", "x": 3, "y": 1},
+    {"id": "s2", "x": 3, "y": 3},
+    {"id": "s3", "x": 3, "y": 5},
+    {"id": "s4", "x": 6, "y": 1},
+    {"id": "s5", "x": 6, "y": 3},
+    {"id": "s6", "x": 6, "y": 5},
+    {"id": "s7", "x": 9, "y": 1},
+    {"id": "s8", "x": 9, "y": 3}
+  ],
+  "objectives": [
+    {"kind": "sold", "resource": "toy-guitar", "at_least": 8, "text": "Sell 8 toy guitars"},
+    {"kind": "profit", "at_least": 20000, "text": "Earn $200"}
+  ],
+  "reference_designs": [
+    {
+      "name": "Initial",
+      "initial": true,
+      "design": {
+        "orders": {"cotton-supply": 7, "string-supply": 6, "plastic-supply": 1, "wood-supply": 2},
+        "machines": [
+          {"slot": "s1", "type": "loom", "recipe": "fabric"},
+          {"slot": "s2", "type": "carder", "recipe": "stuffing"},
+          {"slot": "s3", "type": "sewing", "recipe": "stuffed-animal"},
+          {"slot": "s4", "type": "sewing", "recipe": "stuffed-animal"},
+          {"slot": "s5", "type": "woodshop", "recipe": "guitar-body"},
+          {"slot": "s6", "type": "molder", "recipe": "pegs"},
+          {"slot": "s7", "type": "assembly", "recipe": "toy-guitar"}
+        ],
+        "belts": [
+          {"from": "cotton-supply", "to": "s1", "resource": "cotton", "weight": 1},
+          {"from": "cotton-supply", "to": "s2", "resource": "cotton", "weight": 1},
+          {"from": "string-supply", "to": "s1", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s3", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s4", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s7", "resource": "string", "weight": 1},
+          {"from": "plastic-supply", "to": "s6", "resource": "plastic", "weight": 1},
+          {"from": "wood-supply", "to": "s5", "resource": "wood", "weight": 1},
+          {"from": "s1", "to": "s3", "resource": "fabric", "weight": 1},
+          {"from": "s1", "to": "s4", "resource": "fabric", "weight": 1},
+          {"from": "s2", "to": "s3", "resource": "stuffing", "weight": 1},
+          {"from": "s2", "to": "s4", "resource": "stuffing", "weight": 1},
+          {"from": "s3", "to": "market", "resource": "stuffed-animal", "weight": 1},
+          {"from": "s4", "to": "market", "resource": "stuffed-animal", "weight": 1},
+          {"from": "s5", "to": "s7", "resource": "guitar-body", "weight": 1},
+          {"from": "s6", "to": "s7", "resource": "pegs", "weight": 1},
+          {"from": "s7", "to": "market", "resource": "toy-guitar", "weight": 1}
+        ]
+      },
+      "profit": 640
+    },
+    {
+      "name": "Best known",
+      "design": {
+        "orders": {"cotton-supply": 4, "string-supply": 5, "plastic-supply": 1, "wood-supply": 3},
+        "machines": [
+          {"slot": "s1", "type": "loom", "recipe": "fabric"},
+          {"slot": "s2", "type": "carder", "recipe": "stuffing"},
+          {"slot": "s3", "type": "woodshop", "recipe": "guitar-body"},
+          {"slot": "s4", "type": "woodshop", "recipe": "guitar-body"},
+          {"slot": "s5", "type": "molder", "recipe": "pegs"},
+          {"slot": "s6", "type": "sewing", "recipe": "stuffed-animal"},
+          {"slot": "s7", "type": "assembly", "recipe": "toy-guitar"},
+          {"slot": "s8", "type": "assembly", "recipe": "toy-guitar"}
+        ],
+        "belts": [
+          {"from": "cotton-supply", "to": "s1", "resource": "cotton", "weight": 1},
+          {"from": "cotton-supply", "to": "s2", "resource": "cotton", "weight": 1},
+          {"from": "string-supply", "to": "s1", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s6", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s7", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s8", "resource": "string", "weight": 1},
+          {"from": "plastic-supply", "to": "s5", "resource": "plastic", "weight": 1},
+          {"from": "wood-supply", "to": "s3", "resource": "wood", "weight": 1},
+          {"from": "wood-supply", "to": "s4", "resource": "wood", "weight": 1},
+          {"from": "s1", "to": "s6", "resource": "fabric", "weight": 1},
+          {"from": "s2", "to": "s6", "resource": "stuffing", "weight": 1},
+          {"from": "s3", "to": "s7", "resource": "guitar-body", "weight": 1},
+          {"from": "s3", "to": "s8", "resource": "guitar-body", "weight": 1},
+          {"from": "s4", "to": "s7", "resource": "guitar-body", "weight": 1},
+          {"from": "s4", "to": "s8", "resource": "guitar-body", "weight": 1},
+          {"from": "s3", "to": "market", "resource": "offcut", "weight": 1},
+          {"from": "s4", "to": "market", "resource": "offcut", "weight": 1},
+          {"from": "s5", "to": "s7", "resource": "pegs", "weight": 1},
+          {"from": "s5", "to": "s8", "resource": "pegs", "weight": 1},
+          {"from": "s6", "to": "market", "resource": "stuffed-animal", "weight": 1},
+          {"from": "s7", "to": "market", "resource": "toy-guitar", "weight": 1},
+          {"from": "s8", "to": "market", "resource": "toy-guitar", "weight": 1}
+        ]
+      },
+      "profit": 21900
+    }
+  ]
+}

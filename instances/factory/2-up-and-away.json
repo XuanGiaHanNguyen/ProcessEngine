@@ -1,0 +1,235 @@
+{
+  "format": "processforge-factory/1",
+  "id": "up-and-away",
+  "name": "Up and Away",
+  "description": "Kites and stuffed animals share the fabric and the sewing stations.",
+  "hours": 24,
+  "belt_capacity": 10,
+  "buffer_batches": 2,
+  "budget": null,
+  "resources": [
+    {"id": "cotton", "name": "Cotton", "kind": "raw"},
+    {"id": "string", "name": "String", "kind": "raw"},
+    {"id": "wood", "name": "Wood", "kind": "raw"},
+    {"id": "fabric", "name": "Fabric", "kind": "part"},
+    {"id": "stuffing", "name": "Stuffing", "kind": "part"},
+    {"id": "dowel", "name": "Dowel", "kind": "part"},
+    {"id": "stuffed-animal", "name": "Stuffed animal", "kind": "product"},
+    {"id": "kite", "name": "Kite", "kind": "product"}
+  ],
+  "suppliers": [
+    {
+      "id": "cotton-supply",
+      "resource": "cotton",
+      "max_rate": 40,
+      "unit_cost": 40,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "string-supply",
+      "resource": "string",
+      "max_rate": 24,
+      "unit_cost": 25,
+      "x": 0,
+      "y": 2
+    },
+    {"id": "wood-supply", "resource": "wood", "max_rate": 16, "unit_cost": 80, "x": 0, "y": 4}
+  ],
+  "machine_types": [
+    {
+      "id": "loom",
+      "name": "Loom",
+      "cost": 1500,
+      "recipes": [
+        {
+          "id": "fabric",
+          "name": "Weave fabric",
+          "inputs": {"cotton": 4, "string": 2},
+          "outputs": {"fabric": 2},
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "carder",
+      "name": "Carder",
+      "cost": 1000,
+      "recipes": [
+        {
+          "id": "stuffing",
+          "name": "Card stuffing",
+          "inputs": {"cotton": 3},
+          "outputs": {"stuffing": 4},
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "sewing",
+      "name": "Sewing station",
+      "cost": 2000,
+      "recipes": [
+        {
+          "id": "stuffed-animal",
+          "name": "Sew stuffed animals",
+          "inputs": {"fabric": 2, "stuffing": 4, "string": 2},
+          "outputs": {"stuffed-animal": 2},
+          "hours": 2
+        },
+        {
+          "id": "kite",
+          "name": "Sew a kite",
+          "inputs": {"fabric": 1, "dowel": 2, "string": 2},
+          "outputs": {"kite": 1},
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "woodshop",
+      "name": "Woodshop",
+      "cost": 1800,
+      "recipes": [
+        {
+          "id": "dowel",
+          "name": "Cut dowels",
+          "inputs": {"wood": 1},
+          "outputs": {"dowel": 3},
+          "hours": 1
+        }
+      ]
+    }
+  ],
+  "market": {
+    "x": 12,
+    "y": 3,
+    "listings": [
+      {"resource": "stuffed-animal", "price": 900, "demand": 2, "overflow_price": 500},
+      {"resource": "kite", "price": 800, "demand": 2, "overflow_price": 450}
+    ]
+  },
+  "slots": [
+    {"id": "s1", "x": 3, "y": 1},
+    {"id": "s2", "x": 3, "y": 3},
+    {"id": "s3", "x": 3, "y": 5},
+    {"id": "s4", "x": 6, "y": 1},
+    {"id": "s5", "x": 6, "y": 3},
+    {"id": "s6", "x": 6, "y": 5},
+    {"id": "s7", "x": 9, "y": 1}
+  ],
+  "objectives": [
+    {"kind": "sold", "resource": "kite", "at_least": 10, "text": "Sell 10 kites"},
+    {"kind": "profit", "at_least": 12000, "text": "Earn $120"}
+  ],
+  "reference_designs": [
+    {
+      "name": "Initial",
+      "initial": true,
+      "design": {
+        "orders": {"cotton-supply": 7, "string-supply": 4},
+        "machines": [
+          {"slot": "s1", "type": "loom", "recipe": "fabric"},
+          {"slot": "s2", "type": "carder", "recipe": "stuffing"},
+          {"slot": "s3", "type": "sewing", "recipe": "stuffed-animal"},
+          {"slot": "s4", "type": "sewing", "recipe": "stuffed-animal"}
+        ],
+        "belts": [
+          {"from": "cotton-supply", "to": "s1", "resource": "cotton", "weight": 1},
+          {"from": "cotton-supply", "to": "s2", "resource": "cotton", "weight": 1},
+          {"from": "string-supply", "to": "s1", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s3", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s4", "resource": "string", "weight": 1},
+          {"from": "s1", "to": "s3", "resource": "fabric", "weight": 1},
+          {"from": "s1", "to": "s4", "resource": "fabric", "weight": 1},
+          {"from": "s2", "to": "s3", "resource": "stuffing", "weight": 1},
+          {"from": "s2", "to": "s4", "resource": "stuffing", "weight": 1},
+          {"from": "s3", "to": "market", "resource": "stuffed-animal", "weight": 1},
+          {"from": "s4", "to": "market", "resource": "stuffed-animal", "weight": 1}
+        ]
+      },
+      "profit": 6780
+    },
+    {
+      "name": "Best known",
+      "design": {
+        "orders": {"cotton-supply": 12, "string-supply": 6},
+        "machines": [
+          {"slot": "s1", "type": "loom", "recipe": "fabric"},
+          {"slot": "s2", "type": "loom", "recipe": "fabric"},
+          {"slot": "s3", "type": "carder", "recipe": "stuffing"},
+          {"slot": "s4", "type": "carder", "recipe": "stuffing"},
+          {"slot": "s5", "type": "sewing", "recipe": "stuffed-animal"},
+          {"slot": "s6", "type": "sewing", "recipe": "stuffed-animal"},
+          {"slot": "s7", "type": "sewing", "recipe": "stuffed-animal"}
+        ],
+        "belts": [
+          {"from": "cotton-supply", "to": "s1", "resource": "cotton", "weight": 1},
+          {"from": "cotton-supply", "to": "s2", "resource": "cotton", "weight": 1},
+          {"from": "cotton-supply", "to": "s3", "resource": "cotton", "weight": 1},
+          {"from": "cotton-supply", "to": "s4", "resource": "cotton", "weight": 1},
+          {"from": "string-supply", "to": "s1", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s2", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s5", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s6", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s7", "resource": "string", "weight": 1},
+          {"from": "s1", "to": "s5", "resource": "fabric", "weight": 1},
+          {"from": "s1", "to": "s6", "resource": "fabric", "weight": 1},
+          {"from": "s1", "to": "s7", "resource": "fabric", "weight": 1},
+          {"from": "s2", "to": "s5", "resource": "fabric", "weight": 1},
+          {"from": "s2", "to": "s6", "resource": "fabric", "weight": 1},
+          {"from": "s2", "to": "s7", "resource": "fabric", "weight": 1},
+          {"from": "s3", "to": "s5", "resource": "stuffing", "weight": 1},
+          {"from": "s3", "to": "s6", "resource": "stuffing", "weight": 1},
+          {"from": "s3", "to": "s7", "resource": "stuffing", "weight": 1},
+          {"from": "s4", "to": "s5", "resource": "stuffing", "weight": 1},
+          {"from": "s4", "to": "s6", "resource": "stuffing", "weight": 1},
+          {"from": "s4", "to": "s7", "resource": "stuffing", "weight": 1},
+          {"from": "s5", "to": "market", "resource": "stuffed-animal", "weight": 1},
+          {"from": "s6", "to": "market", "resource": "stuffed-animal", "weight": 1},
+          {"from": "s7", "to": "market", "resource": "stuffed-animal", "weight": 1}
+        ]
+      },
+      "profit": 13480
+    },
+    {
+      "name": "Alternative 1",
+      "design": {
+        "orders": {"cotton-supply": 9, "string-supply": 7, "wood-supply": 1},
+        "machines": [
+          {"slot": "s1", "type": "loom", "recipe": "fabric"},
+          {"slot": "s2", "type": "loom", "recipe": "fabric"},
+          {"slot": "s3", "type": "carder", "recipe": "stuffing"},
+          {"slot": "s4", "type": "woodshop", "recipe": "dowel"},
+          {"slot": "s5", "type": "sewing", "recipe": "stuffed-animal"},
+          {"slot": "s6", "type": "sewing", "recipe": "kite"},
+          {"slot": "s7", "type": "sewing", "recipe": "kite"}
+        ],
+        "belts": [
+          {"from": "cotton-supply", "to": "s1", "resource": "cotton", "weight": 1},
+          {"from": "cotton-supply", "to": "s2", "resource": "cotton", "weight": 1},
+          {"from": "cotton-supply", "to": "s3", "resource": "cotton", "weight": 1},
+          {"from": "string-supply", "to": "s1", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s2", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s5", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s6", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s7", "resource": "string", "weight": 1},
+          {"from": "wood-supply", "to": "s4", "resource": "wood", "weight": 1},
+          {"from": "s1", "to": "s5", "resource": "fabric", "weight": 1},
+          {"from": "s1", "to": "s6", "resource": "fabric", "weight": 1},
+          {"from": "s1", "to": "s7", "resource": "fabric", "weight": 1},
+          {"from": "s2", "to": "s5", "resource": "fabric", "weight": 1},
+          {"from": "s2", "to": "s6", "resource": "fabric", "weight": 1},
+          {"from": "s2", "to": "s7", "resource": "fabric", "weight": 1},
+          {"from": "s3", "to": "s5", "resource": "stuffing", "weight": 1},
+          {"from": "s4", "to": "s6", "resource": "dowel", "weight": 1},
+          {"from": "s4", "to": "s7", "resource": "dowel", "weight": 1},
+          {"from": "s5", "to": "market", "resource": "stuffed-animal", "weight": 1},
+          {"from": "s6", "to": "market", "resource": "kite", "weight": 1},
+          {"from": "s7", "to": "market", "resource": "kite", "weight": 1}
+        ]
+      },
+      "profit": 12040
+    }
+  ]
+}

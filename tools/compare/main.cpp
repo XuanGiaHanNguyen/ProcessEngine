@@ -117,7 +117,11 @@ bool loadInstances(const Options& o, std::vector<NamedInstance>& out) {
   for (const std::string& p : o.instance_paths) {
     if (fs::is_directory(p)) {
       for (const auto& e : fs::recursive_directory_iterator(p)) {
-        if (e.is_regular_file() && e.path().extension() == ".json") files.push_back(e.path());
+        // Directory scans skip Factory-mode levels, which are not scheduling instances.
+        if (e.is_regular_file() && e.path().extension() == ".json" &&
+            e.path().parent_path().filename() != "factory") {
+          files.push_back(e.path());
+        }
       }
     } else {
       files.emplace_back(p);
