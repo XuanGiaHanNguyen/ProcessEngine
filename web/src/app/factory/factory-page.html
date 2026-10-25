@@ -1,42 +1,55 @@
-@if (error(); as err) {
+@if (store.error(); as err) {
   <p class="load-error" role="alert">{{ err }}</p>
 }
 <div class="stage">
   <app-factory-canvas
     class="canvas"
-    [level]="level()"
-    [design]="design()"
-    [selected]="selected()"
+    [level]="store.level()"
+    [design]="store.draft()"
+    [selection]="asCanvasSelection()"
+    [editable]="true"
     [insets]="[324, 314]"
-    (nodeSelected)="selected.set($event)"
+    (nodeSelected)="selectNode($event)"
+    (beltSelected)="selectBelt($event)"
+    (connect)="store.connect($event.from, $event.to)"
   />
 
-  <aside class="left" aria-label="Goal and tests">
+  @if (store.message(); as msg) {
+    <div class="toast" role="status">
+      {{ msg }}
+      <button type="button" (click)="store.message.set(null)" aria-label="Dismiss">×</button>
+    </div>
+  }
+
+  <aside class="left" aria-label="Goal and draft">
     <section class="panel goal">
       <div class="level-nav">
         <button
           type="button"
           (click)="step(-1)"
-          [disabled]="levelIndex() <= 0"
+          [disabled]="store.levelIndex() <= 0"
           aria-label="Previous level"
         >
           ‹
         </button>
-        <span class="level-label">Level {{ levelIndex() + 1 }} of {{ levels().length }}</span>
+        <span class="level-label"
+          >Level {{ store.levelIndex() + 1 }} of {{ store.levels().length }}</span
+        >
         <button
           type="button"
           (click)="step(1)"
-          [disabled]="levelIndex() >= levels().length - 1"
+          [disabled]="store.levelIndex() >= store.levels().length - 1"
           aria-label="Next level"
         >
           ›
         </button>
       </div>
-      <h2>{{ level()?.name }}</h2>
+      <h2>{{ store.level()?.name }}</h2>
       <p class="eyebrow">Goal</p>
       <p>
-        Edit the factory to earn as much money as possible over {{ level()?.hours ?? 24 }} hours.
-        {{ level()?.description }}
+        Edit the factory to earn as much money as possible over
+        {{ store.level()?.hours ?? 24 }} hours.
+        {{ store.level()?.description }}
       </p>
       @if (target(); as t) {
         <p class="target">
@@ -44,128 +57,70 @@
           >. Can you beat it?
         </p>
       }
-      @if (level()?.budget; as budget) {
-        <p class="target">
-          Budget: <strong>{{ money(budget) }}</strong>
-        </p>
-      }
     </section>
 
-    <section class="panel tests">
-      <h3>Tested Factories</h3>
-      <ul>
-        @for (t of tests(); track t.name) {
-          <li>
-            <button
-              type="button"
-              class="test-row"
-              [class.active]="shown() === t"
-              (click)="shown.set(t)"
-            >
-              <span>{{ t.name }} test</span>
-              <span class="amount" [class.neg]="t.profit < 0">{{ money(t.profit) }}</span>
-            </button>
-          </li>
-        }
-      </ul>
-      <div class="spark-placeholder">Test results and hour-by-hour playback appear here.</div>
+    <section class="panel draft" aria-label="Draft">
+      <div class="draft-head">
+        <h3>Draft</h3>
+        <div class="tools">
+          <button
+            type="button"
+            (click)="store.undo()"
+            [disabled]="!store.canUndo()"
+            aria-label="Undo"
+          >
+            ↶
+          </button>
+          <button
+            type="button"
+            (click)="store.redo()"
+            [disabled]="!store.canRedo()"
+            aria-label="Redo"
+          >
+            ↷
+          </button>
+          <button type="button" (click)="resetDraft()" aria-label="Reset to the initial factory">
+            ⟲
+          </button>
+        </div>
+      </div>
       <p class="build">
-        Build cost <strong>{{ money(buildCost()) }}</strong>
+        Build cost <strong>{{ money(store.buildCost()) }}</strong>
+        @if (budgetLeft() !== null) {
+          · budget {{ money(store.level()?.budget ?? 0) }}
+        }
       </p>
+      @if (store.check(); as check) {
+        @if (check.valid) {
+          <p class="status ok">✓ Ready to test</p>
+        } @else {
+          <p class="status bad">
+            ✗ Fix {{ check.errors.length }} problem{{ check.errors.length > 1 ? 's' : '' }}
+          </p>
+          <ul class="issues bad">
+            @for (e of check.errors; track $index) {
+              <li>{{ e.message }}</li>
+            }
+          </ul>
+        }
+        @if (check.warnings.length) {
+          <ul class="issues warn">
+            @for (w of check.warnings; track $index) {
+              <li>{{ w.message }}</li>
+            }
+          </ul>
+        }
+      }
     </section>
   </aside>
 
-  <aside class="right panel purple" aria-label="Objectives and inspector">
-    @if (inspected(); as node) {
-      <div class="inspector">
-        <button
-          type="button"
-          class="close"
-          (click)="selected.set(null)"
-          aria-label="Close inspector"
-        >
-          ×
-        </button>
-        @switch (node.kind) {
-          @case ('supplier') {
-            @if (node.kind === 'supplier') {
-              <h3>{{ node.icon }} {{ node.title }}</h3>
-              <dl>
-                <dt>Order</dt>
-                <dd>{{ node.rate }} per hour (max {{ node.max }})</dd>
-                <dt>Cost</dt>
-                <dd>{{ node.cost }} each</dd>
-              </dl>
-            }
-          }
-          @case ('machine') {
-            @if (node.kind === 'machine') {
-              <h3>{{ iconFor(entries(node.recipe.outputs)[0].id) }} {{ node.title }}</h3>
-              <p class="recipe-name">{{ node.recipe.name }}</p>
-              <div class="recipe">
-                <span>
-                  @for (i of entries(node.recipe.inputs); track i.id) {
-                    <span class="chip"
-                      >{{ i.qty }} {{ iconFor(i.id) }} {{ resourceName(i.id) }}</span
-                    >
-                  }
-                </span>
-                <span class="arrow" aria-label="makes">→</span>
-                <span>
-                  @for (o of entries(node.recipe.outputs); track o.id) {
-                    <span class="chip"
-                      >{{ o.qty }} {{ iconFor(o.id) }} {{ resourceName(o.id) }}</span
-                    >
-                  }
-                </span>
-              </div>
-              <dl>
-                <dt>Batch time</dt>
-                <dd>{{ node.recipe.hours }} hour{{ node.recipe.hours > 1 ? 's' : '' }}</dd>
-                <dt>Build cost</dt>
-                <dd>{{ money(node.type.cost) }}</dd>
-              </dl>
-            }
-          }
-          @case ('market') {
-            <h3>🛒 Market</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Toy</th>
-                  <th>Price</th>
-                  <th>Per hour</th>
-                  <th>Then</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (l of level()?.market?.listings ?? []; track l.resource) {
-                  <tr>
-                    <td>{{ iconFor(l.resource) }} {{ resourceName(l.resource) }}</td>
-                    <td>{{ money(l.price) }}</td>
-                    <td>{{ l.demand }}</td>
-                    <td>{{ money(l.overflow_price) }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          }
-          @default {
-            <h3>{{ node.title }}</h3>
-            <p>Build a machine here (editing comes in a later step).</p>
-          }
-        }
-      </div>
-    } @else {
-      <h3>Objectives</h3>
-      <ul class="objectives">
-        @for (o of level()?.objectives ?? []; track o.text) {
+  <aside class="right panel purple" aria-label="Inspector">
+    <app-factory-inspector>
+      <ul class="objectives" objectives>
+        @for (o of store.level()?.objectives ?? []; track o.text) {
           <li><span class="check" aria-hidden="true"></span>{{ o.text }}</li>
         }
       </ul>
-      <p class="hint">
-        Click a machine, supplier or the market to inspect it. Drag to pan, scroll to zoom.
-      </p>
-    }
+    </app-factory-inspector>
   </aside>
 </div>
