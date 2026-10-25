@@ -1,13 +1,25 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 
 import { ApiService } from '../api/api.service';
 import * as ops from './design-ops';
-import { Design, DesignCheck, FactoryLevel, FactoryLevelInfo } from './factory-models';
+import { Design, DesignCheck, FactoryLevel, FactoryLevelInfo, SimResult } from './factory-models';
+import { objectiveMet } from './objectives';
 
 /** What is selected on the floor: a node (supplier, slot or market) or a belt. */
 export type Selection = { kind: 'node'; id: string } | { kind: 'belt'; index: number } | null;
 
+/** A tested design and its 24-hour report. */
+export interface TestRun {
+  id: number;
+  name: string;
+  kind: 'initial' | 'player' | 'solver';
+  design: Design;
+  result: SimResult;
+}
+
 const HISTORY_LIMIT = 100;
+const MAX_TESTS = 20;
+const PLAY_INTERVAL_MS = 700;
 
 function storageGet(key: string): string | null {
   try {
@@ -27,7 +39,8 @@ function storageSet(key: string, value: string): void {
 
 /**
  * State of Factory mode for one page: the open level, the draft design with undo/redo, its
- * server-side check, and the selection. Drafts are remembered per level in localStorage.
+ * server-side check, the selection, and the tested factories with their playback position.
+ * Drafts, tests and stepped hours are remembered per level in localStorage.
  */
 @Injectable()
 export class FactoryStore {
@@ -40,6 +53,16 @@ export class FactoryStore {
   readonly selection = signal<Selection>(null);
   readonly message = signal<string | null>(null);
   readonly error = signal<string | null>(null);
+
+  readonly tests = signal<TestRun[]>([]);
+  /** The test being played back, or null while editing the draft. */
+  readonly viewing = signal<number | null>(null);
+  readonly hour = signal(0);
+  readonly playing = signal(false);
+  readonly testing = signal(false);
+  /** Distinct hours the player has stepped or played through (for "step" objectives). */
+  private readonly stepped = signal<number[]>([]);
+  private playTimer?: ReturnType<typeof setInterval>;
 
   private readonly past = signal<Design[]>([]);
   private readonly future = signal<Design[]>([]);
@@ -56,6 +79,22 @@ export class FactoryStore {
   readonly initialDesign = computed(
     () => this.level()?.reference_designs.find((r) => r.initial) ?? null,
   );
+  readonly viewedTest = computed(() => this.tests().find((t) => t.id === this.viewing()) ?? null);
+  readonly currentHour = computed(() => this.viewedTest()?.result.hours[this.hour()] ?? null);
+  readonly objectives = computed(() => {
+    const player = this.tests()
+      .filter((t) => t.kind === 'player')
+      .map((t) => t.result);
+    const stepped = this.stepped().length;
+    return (this.level()?.objectives ?? []).map((o) => ({
+      ...o,
+      met: objectiveMet(o, player, stepped),
+    }));
+  });
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => clearInterval(this.playTimer));
+  }
 
   async init(): Promise<void> {
     try {
@@ -78,6 +117,10 @@ export class FactoryStore {
     this.message.set(null);
     this.past.set([]);
     this.future.set([]);
+    this.pause();
+    this.viewing.set(null);
+    this.hour.set(0);
+    this.loadTests(level);
     let draft: Design | null = null;
     const saved = storageGet(`pf.factory.draft.${id}`);
     if (saved) {
@@ -90,6 +133,137 @@ export class FactoryStore {
     const initial = level.reference_designs.find((r) => r.initial)?.design;
     this.setDraft(
       draft ?? (initial ? ops.cloneDesign(initial) : { orders: {}, machines: [], belts: [] }),
+    );
+    if (!this.tests().length && initial) await this.addTest('Initial', 'initial', initial, false);
+  }
+
+  /** Simulates the draft as a new test and starts playing it back from hour 1. */
+  async runTest(): Promise<void> {
+    const draft = this.draft();
+    if (!draft || this.testing()) return;
+    const n = this.tests().filter((t) => t.kind === 'player').length + 1;
+    await this.addTest(`Test ${n}`, 'player', draft);
+  }
+
+  /** Simulates `design` and adds it to the tested factories (and plays it back if `show`). */
+  async addTest(
+    name: string,
+    kind: TestRun['kind'],
+    design: Design,
+    show = true,
+  ): Promise<TestRun | null> {
+    const level = this.level();
+    if (!level) return null;
+    this.testing.set(true);
+    try {
+      const { result } = await this.api.simulateDesign(level.id, design);
+      const ids = this.tests().map((t) => t.id);
+      const run: TestRun = {
+        id: ids.length ? Math.max(...ids) + 1 : 1,
+        name,
+        kind,
+        design: ops.cloneDesign(design),
+        result,
+      };
+      // Keep the initial test; drop the oldest others beyond the cap.
+      this.tests.update((list) => {
+        const next = [...list, run];
+        while (next.length > MAX_TESTS)
+          next.splice(
+            next.findIndex((t) => t.kind !== 'initial'),
+            1,
+          );
+        return next;
+      });
+      this.saveTests();
+      if (show) this.view(run.id);
+      return run;
+    } catch (e) {
+      this.message.set(e instanceof Error ? e.message : String(e));
+      return null;
+    } finally {
+      this.testing.set(false);
+    }
+  }
+
+  /** Plays back a test (the floor shows its design, read-only). */
+  view(id: number): void {
+    this.pause();
+    this.viewing.set(id);
+    this.selection.set(null);
+    this.seek(0);
+  }
+
+  /** Leaves playback and returns to the draft. */
+  backToDraft(): void {
+    this.pause();
+    this.viewing.set(null);
+    this.selection.set(null);
+  }
+
+  /** Copies a test's design into the draft (undoable) and returns to editing. */
+  editFrom(id: number): void {
+    const t = this.tests().find((x) => x.id === id);
+    if (!t) return;
+    this.backToDraft();
+    this.replaceDraft(t.design);
+  }
+
+  seek(hour: number): void {
+    const hours = this.viewedTest()?.result.hours.length ?? 0;
+    if (!hours) return;
+    const h = Math.min(hours - 1, Math.max(0, hour));
+    this.hour.set(h);
+    if (!this.stepped().includes(h)) {
+      this.stepped.update((s) => [...s, h]);
+      this.saveTests();
+    }
+  }
+
+  stepBy(delta: number): void {
+    this.pause();
+    this.seek(this.hour() + delta);
+  }
+
+  togglePlay(): void {
+    if (this.playing()) {
+      this.pause();
+      return;
+    }
+    const last = (this.viewedTest()?.result.hours.length ?? 1) - 1;
+    if (this.hour() >= last) this.seek(0);
+    this.playing.set(true);
+    this.playTimer = setInterval(() => {
+      if (this.hour() >= last) this.pause();
+      else this.seek(this.hour() + 1);
+    }, PLAY_INTERVAL_MS);
+  }
+
+  pause(): void {
+    clearInterval(this.playTimer);
+    this.playing.set(false);
+  }
+
+  private loadTests(level: FactoryLevel): void {
+    this.tests.set([]);
+    this.stepped.set([]);
+    const saved = storageGet(`pf.factory.tests.${level.id}`);
+    if (!saved) return;
+    try {
+      const data = JSON.parse(saved) as { tests: TestRun[]; stepped: number[] };
+      this.tests.set(Array.isArray(data.tests) ? data.tests : []);
+      this.stepped.set(Array.isArray(data.stepped) ? data.stepped : []);
+    } catch {
+      // A corrupt entry is ignored; the level starts with no tests.
+    }
+  }
+
+  private saveTests(): void {
+    const level = this.level();
+    if (!level) return;
+    storageSet(
+      `pf.factory.tests.${level.id}`,
+      JSON.stringify({ tests: this.tests(), stepped: this.stepped() }),
     );
   }
 

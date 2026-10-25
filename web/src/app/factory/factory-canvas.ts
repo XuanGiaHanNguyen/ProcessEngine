@@ -18,7 +18,7 @@ import { linkHorizontal } from 'd3-shape';
 import 'd3-transition';
 import { ZoomBehavior, zoom, zoomIdentity } from 'd3-zoom';
 
-import { Design, FactoryLevel, money } from './factory-models';
+import { Design, FactoryLevel, HourReport, money } from './factory-models';
 import { iconFor, itemColor } from './icons';
 
 type NodeKind = 'supplier' | 'machine' | 'slot' | 'market';
@@ -34,6 +34,8 @@ interface CanvasNode {
   badge: string;
   sub: string;
   active: boolean;
+  /** Machine status during playback: busy, blocked or starved. */
+  status?: string;
 }
 
 /** A drawable belt between two node centers. */
@@ -42,6 +44,8 @@ interface CanvasBelt {
   index: number;
   resource: string;
   weight: number;
+  /** Units carried this hour during playback, else null. */
+  moved: number | null;
   source: [number, number];
   target: [number, number];
   active: boolean;
@@ -93,6 +97,8 @@ export class FactoryCanvas {
   readonly selection = input<CanvasSelection>(null);
   /** Allow dragging from a supplier or machine to another node to lay belts. */
   readonly editable = input(false);
+  /** During test playback: the hour being shown, which drives badges and belt flow. */
+  readonly report = input<HourReport | null>(null);
   /** Animate items along belts. */
   readonly flowing = input(true);
   /** Pixels covered by overlays on the left and right, kept clear when fitting. */
@@ -126,6 +132,7 @@ export class FactoryCanvas {
       this.design();
       this.selection();
       this.editable();
+      this.report();
       if (this.zoomBehavior) this.render();
     });
     let lastLevel: string | undefined;
@@ -191,6 +198,7 @@ export class FactoryCanvas {
 
     const nodes: CanvasNode[] = [];
     const orders = design?.orders ?? {};
+    const report = this.report();
     for (const s of level.suppliers) {
       const rate = orders[s.id] ?? 0;
       nodes.push({
@@ -201,7 +209,7 @@ export class FactoryCanvas {
         icon: iconFor(s.resource),
         title: level.resources.find((r) => r.id === s.resource)?.name ?? s.resource,
         badge: `${rate}/h`,
-        sub: `x${money(s.unit_cost)}`,
+        sub: report ? `stock ${report.stock[s.id] ?? 0}` : `x${money(s.unit_cost)}`,
         active: rate > 0,
       });
     }
@@ -212,6 +220,18 @@ export class FactoryCanvas {
       const recipe = type?.recipes.find((r) => r.id === m?.recipe);
       if (m && type && recipe) {
         const out = Object.keys(recipe.outputs)[0];
+        const mh = report?.machines[design?.machines.indexOf(m) ?? -1];
+        let badge = type.name;
+        let sub = `${recipe.hours} hr${recipe.hours > 1 ? 's' : ''}`;
+        if (mh) {
+          badge =
+            mh.status === 'busy'
+              ? `${mh.progress} of ${mh.total} hr${mh.total > 1 ? 's' : ''}`
+              : mh.status === 'blocked'
+                ? 'Blocked'
+                : 'Waiting';
+          sub = `${mh.batches_done} batch${mh.batches_done === 1 ? '' : 'es'} done`;
+        }
         nodes.push({
           id: slot.id,
           kind: 'machine',
@@ -219,9 +239,10 @@ export class FactoryCanvas {
           y: sy(slot.y),
           icon: iconFor(out),
           title: `${type.name}: ${recipe.name}`,
-          badge: type.name,
-          sub: `${recipe.hours} hr${recipe.hours > 1 ? 's' : ''}`,
-          active: true,
+          badge,
+          sub,
+          active: mh ? mh.status === 'busy' : true,
+          status: mh?.status,
         });
       } else {
         nodes.push({
@@ -244,9 +265,13 @@ export class FactoryCanvas {
       y: sy(level.market.y),
       icon: '🛒',
       title: 'Market',
-      badge: 'Market',
-      sub: '',
-      active: true,
+      badge: report ? `+${money(report.revenue)}` : 'Market',
+      sub: report
+        ? Object.entries(report.sold)
+            .map(([r, n]) => `${n} ${iconFor(r)}`)
+            .join(' ')
+        : '',
+      active: report ? report.revenue > 0 : true,
     });
 
     const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -260,9 +285,10 @@ export class FactoryCanvas {
         index,
         resource: b.resource,
         weight: b.weight ?? 1,
+        moved: report ? (report.belts[index] ?? 0) : null,
         source: [from.x + R, from.y],
         target: [to.x - R, to.y],
-        active: from.active,
+        active: report ? (report.belts[index] ?? 0) > 0 : from.active,
       });
     }
     return { nodes, belts };
@@ -307,14 +333,16 @@ export class FactoryCanvas {
     belt.selectAll<SVGPathElement, CanvasBelt>('path').attr('d', (d) => link(d));
     belt
       .select('g.belt-tag')
-      .attr('display', (d) => (d.weight > 1 ? null : 'none'))
+      .attr('display', (d) =>
+        (d.moved ?? 0) > 0 || (d.moved === null && d.weight > 1) ? null : 'none',
+      )
       .attr('transform', (d) => {
         const [x1, y1] = d.source;
         const [x2, y2] = d.target;
         return `translate(${(x1 + x2) / 2}, ${(y1 + y2) / 2})`;
       })
       .select('text')
-      .text((d) => `×${d.weight}`);
+      .text((d) => (d.moved === null ? `×${d.weight}` : `${d.moved}`));
     belt.select('title').text((d) => d.key.replace('>', ' → ').replace(':', ' · '));
 
     this.layer(vp, 'items');
@@ -351,7 +379,10 @@ export class FactoryCanvas {
         return g;
       });
     node
-      .attr('class', (d) => `node ${d.kind}${d.active ? ' active' : ''}`)
+      .attr(
+        'class',
+        (d) => `node ${d.kind}${d.active ? ' active' : ''}${d.status ? ' ' + d.status : ''}`,
+      )
       .classed('selected', (d) => sel?.kind === 'node' && sel.id === d.id)
       .classed('source', (d) => this.editable() && (d.kind === 'supplier' || d.kind === 'machine'))
       .attr('transform', (d) => `translate(${d.x}, ${d.y})`)
