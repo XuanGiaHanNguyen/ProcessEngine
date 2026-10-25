@@ -214,7 +214,7 @@ Objectives are independent checkboxes: each one is met once any test of the leve
 
 ### Limits
 
-`hours` 1..168; at most 16 resources, 8 suppliers, 12 machine types, 4 recipes per
+`hours` 1..168; at most 32 resources, 8 suppliers, 12 machine types, 4 recipes per
 type, 24 slots, 256 belts; recipe quantities 1..1000; recipe hours 1..24;
 `belt_capacity` 1..1000; `buffer_batches` 1..10; `max_rate` 0..1000; prices and costs
 0..1 000 000 cents; `demand` 0..1000. Ids are 1–40 characters of `[a-z0-9-]`; `"market"`
