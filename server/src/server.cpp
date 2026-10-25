@@ -1,13 +1,18 @@
 #include "server.hpp"
 
+#include "pf/factory/json.hpp"
+#include "pf/factory/sim.hpp"
+#include "pf/factory/solvers.hpp"
 #include "pf/generator.hpp"
 #include "pf/json_io.hpp"
 #include "pf/registry.hpp"
 #include "pf/timeline.hpp"
 #include "pf/validator.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <set>
 #include <sstream>
 
@@ -260,6 +265,15 @@ void Server::loadSamples() {
     std::stringstream buffer;
     buffer << in.rdbuf();
     const Json doc = Json::parse(buffer.str(), nullptr, false);
+    if (doc.is_object() && doc.contains("format")) {
+      auto level = factory::json::parseLevel(doc);
+      if (!level.value) {
+        Log::warn("factory_level_skipped", {{"file", f.string()}, {"errors", level.errors}});
+        continue;
+      }
+      factory_levels_.push_back({level.value->id, doc, std::move(*level.value)});
+      continue;
+    }
     auto parsed = json::parseInstance(doc);
     if (!parsed.value) {
       Log::warn("sample_skipped", {{"file", f.string()}, {"errors", parsed.errors}});
@@ -267,7 +281,9 @@ void Server::loadSamples() {
     }
     samples_.push_back({f.stem().string(), doc.value("description", ""), std::move(*parsed.value)});
   }
-  Log::info("samples_loaded", {{"count", samples_.size()}, {"dir", config_.instances_dir}});
+  Log::info("samples_loaded", {{"count", samples_.size()},
+                               {"factory_levels", factory_levels_.size()},
+                               {"dir", config_.instances_dir}});
 }
 
 void Server::registerRoutes() {
@@ -376,6 +392,7 @@ void Server::registerRoutes() {
 
   registerSolveRoutes();
   registerSessionRoutes();
+  registerFactoryRoutes();
   registerWebSocket();
 }
 
@@ -677,6 +694,141 @@ void Server::shutdown() {
   if (sweeper_.joinable()) sweeper_.join();
   jobs_.shutdown();  // cancels running solves, joins solver threads
   Log::info("server_stopped");
+}
+
+void Server::registerFactoryRoutes() {
+  CROW_ROUTE(app_, "/api/factory/levels")([this] {
+    Json out = Json::array();
+    for (const FactoryLevelFile& l : factory_levels_) {
+      out.push_back({{"id", l.id}, {"name", l.level.name}, {"description", l.level.description}});
+    }
+    return jsonResponse(200, out);
+  });
+
+  CROW_ROUTE(app_, "/api/factory/levels/<string>")([this](const std::string& id) {
+    for (const FactoryLevelFile& l : factory_levels_) {
+      if (l.id == id) return jsonResponse(200, l.doc);
+    }
+    return errorResponse(404, "level_not_found", "no factory level '" + id + "'");
+  });
+
+  CROW_ROUTE(app_, "/api/factory/solvers")([] {
+    Json out = Json::array();
+    for (const auto& info : factory::factorySolvers()) {
+      out.push_back({{"name", info.name}, {"description", info.description}});
+    }
+    return jsonResponse(200, out);
+  });
+
+  // Shared by validate, simulate and solve: the bundled level named by body["level"].
+  auto findLevel = [this](const Json& body, crow::response& error) -> const FactoryLevelFile* {
+    if (!body.contains("level") || !body["level"].is_string()) {
+      error = errorResponse(400, "invalid_request", R"("level" must be a level id)");
+      return nullptr;
+    }
+    const std::string id = body["level"].get<std::string>();
+    for (const FactoryLevelFile& l : factory_levels_) {
+      if (l.id == id) return &l;
+    }
+    error = errorResponse(404, "level_not_found", "no factory level '" + id + "'");
+    return nullptr;
+  };
+
+  CROW_ROUTE(app_, "/api/factory/validate")
+      .methods("POST"_method)([this, findLevel](const crow::request& req) {
+        crow::response error;
+        const auto body = parseBody(req, config_.max_body_bytes, error);
+        if (!body) return error;
+        const FactoryLevelFile* level = findLevel(*body, error);
+        if (level == nullptr) return error;
+        const auto parsed =
+            factory::json::parseDesign(body->value("design", Json::object()), level->level);
+        const auto warnings = parsed.design ? factory::designWarnings(level->level, *parsed.design)
+                                            : std::vector<factory::DesignIssue>{};
+        const factory::Cents build =
+            parsed.design ? factory::buildCost(level->level, *parsed.design) : 0;
+        return jsonResponse(200, {{"valid", parsed.design.has_value()},
+                                  {"errors", factory::json::issuesToJson(parsed.errors)},
+                                  {"warnings", factory::json::issuesToJson(warnings)},
+                                  {"build", build}});
+      });
+
+  CROW_ROUTE(app_, "/api/factory/simulate")
+      .methods("POST"_method)([this, findLevel](const crow::request& req) {
+        crow::response error;
+        const auto body = parseBody(req, config_.max_body_bytes, error);
+        if (!body) return error;
+        const FactoryLevelFile* level = findLevel(*body, error);
+        if (level == nullptr) return error;
+        const auto parsed =
+            factory::json::parseDesign(body->value("design", Json::object()), level->level);
+        if (!parsed.design) {
+          return errorResponse(422, "invalid_design", parsed.errors.front().message,
+                               {{"errors", factory::json::issuesToJson(parsed.errors)}});
+        }
+        const auto result = factory::simulate(level->level, *parsed.design);
+        return jsonResponse(
+            200, {{"result", factory::json::toJson(result, level->level, *parsed.design)},
+                  {"warnings", factory::json::issuesToJson(
+                                   factory::designWarnings(level->level, *parsed.design))}});
+      });
+
+  CROW_ROUTE(app_, "/api/factory/solve")
+      .methods("POST"_method)([this, findLevel](const crow::request& req) {
+        crow::response error;
+        const auto body = parseBody(req, config_.max_body_bytes, error);
+        if (!body) return error;
+        const FactoryLevelFile* level = findLevel(*body, error);
+        if (level == nullptr) return error;
+        const Json solvers = body->value("solvers", Json::array());
+        if (!solvers.is_array() || solvers.empty() || solvers.size() > 8) {
+          return errorResponse(400, "invalid_solvers",
+                               "solvers must be a non-empty array of at most 8 names");
+        }
+        std::vector<std::string> names;
+        for (const Json& n : solvers) {
+          if (!n.is_string() || !factory::makeFactorySolver(n.get<std::string>())) {
+            return errorResponse(400, "unknown_solver", "unknown factory solver " + n.dump());
+          }
+          names.push_back(n.get<std::string>());
+        }
+        SolveOptions options;
+        options.time_limit_ms = 2000;
+        if (body->contains("timeLimitMs")) {
+          const Json& t = (*body)["timeLimitMs"];
+          if (!t.is_number() || t.get<double>() <= 0) {
+            return errorResponse(400, "invalid_options", "timeLimitMs must be a positive number");
+          }
+          options.time_limit_ms = t.get<double>();
+        }
+        // Factory solves run while the request waits, so they get a shorter cap than jobs.
+        options.time_limit_ms =
+            std::min({options.time_limit_ms, 10'000.0, config_.job_limits.max_time_limit_ms});
+        if (body->contains("seed") && (*body)["seed"].is_number_unsigned()) {
+          options.seed = (*body)["seed"].get<std::uint64_t>();
+        }
+        std::vector<std::future<factory::FactorySolution>> running;
+        running.reserve(names.size());
+        for (const std::string& n : names) {
+          running.push_back(std::async(std::launch::async, [level, options, n] {
+            return factory::makeFactorySolver(n)->solve(level->level, options);
+          }));
+        }
+        const auto bound = factory::flowUpperBound(level->level, options);
+        Json results = Json::array();
+        for (auto& f : running) {
+          const factory::FactorySolution s = f.get();
+          results.push_back({{"solver_name", s.solver_name},
+                             {"profit", s.profit},
+                             {"runtime_ms", s.runtime_ms},
+                             {"valid", s.valid},
+                             {"error", s.error ? Json(*s.error) : Json(nullptr)},
+                             {"stats", s.stats},
+                             {"design", factory::json::designToJson(s.design, level->level)}});
+        }
+        return jsonResponse(
+            200, {{"bound", bound.bound}, {"boundSolved", bound.solved}, {"results", results}});
+      });
 }
 
 }  // namespace pf::server
