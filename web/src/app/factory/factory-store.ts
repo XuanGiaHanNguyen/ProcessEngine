@@ -60,6 +60,9 @@ export class FactoryStore {
   readonly hour = signal(0);
   readonly playing = signal(false);
   readonly testing = signal(false);
+  readonly comparing = signal(false);
+  /** Upper bound on any design's profit, from the last comparison. */
+  readonly bound = signal<number | null>(null);
   /** Distinct hours the player has stepped or played through (for "step" objectives). */
   private readonly stepped = signal<number[]>([]);
   private playTimer?: ReturnType<typeof setInterval>;
@@ -186,6 +189,35 @@ export class FactoryStore {
     }
   }
 
+  /**
+   * Runs the factory solvers and adds each one's design as a test, so the player can play
+   * them back like their own.
+   */
+  async compare(timeLimitMs = 3000): Promise<void> {
+    const level = this.level();
+    if (!level || this.comparing()) return;
+    this.comparing.set(true);
+    try {
+      const res = await this.api.solveFactory(
+        level.id,
+        ['greedy', 'local_search', 'flow_lp'],
+        timeLimitMs,
+      );
+      this.bound.set(res.bound);
+      this.tests.update((list) => list.filter((t) => t.kind !== 'solver'));
+      let best: TestRun | null = null;
+      for (const r of res.results.filter((x) => x.valid)) {
+        const run = await this.addTest(r.solver_name, 'solver', r.design, false);
+        if (run && (!best || run.result.profit > best.result.profit)) best = run;
+      }
+      if (best) this.view(best.id);
+    } catch (e) {
+      this.message.set(e instanceof Error ? e.message : String(e));
+    } finally {
+      this.comparing.set(false);
+    }
+  }
+
   /** Plays back a test (the floor shows its design, read-only). */
   view(id: number): void {
     this.pause();
@@ -247,6 +279,7 @@ export class FactoryStore {
   private loadTests(level: FactoryLevel): void {
     this.tests.set([]);
     this.stepped.set([]);
+    this.bound.set(null);
     const saved = storageGet(`pf.factory.tests.${level.id}`);
     if (!saved) return;
     try {

@@ -60,7 +60,21 @@
     </section>
 
     <section class="panel tests" aria-label="Tested factories">
-      <h3>Tested Factories</h3>
+      <div class="tests-head">
+        <h3>Tested Factories</h3>
+        <button
+          type="button"
+          class="link"
+          (click)="store.compare()"
+          [disabled]="store.comparing()"
+          title="Run the optimizers on this level and add their factories to the list"
+        >
+          {{ store.comparing() ? 'Solving…' : '🤖 Compare' }}
+        </button>
+      </div>
+      @if (store.bound(); as bound) {
+        <p class="bound">No factory can earn more than {{ money(bound) }} here.</p>
+      }
       <ul>
         @for (t of store.tests(); track t.id) {
           <li>

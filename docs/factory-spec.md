@@ -324,6 +324,6 @@ build      = $15 + $10 + $20                       =  $45.00
 profit     = 162.00 − 100.80 − 45.00               =  $16.20
 ```
 
-The reference model (a short throwaway script used to tune the levels) and the hand
-calculation agree on every number above, and F1's tests pin all reference designs'
-profits.
+A separate reference model (a short script used to tune the levels), the hand calculation
+and the engine's `FactorySim` agree on every number above; the engine tests
+(`engine/tests/factory_test.cpp`) pin this example and every reference design's profit.
