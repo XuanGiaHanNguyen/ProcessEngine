@@ -94,4 +94,9 @@ main {
   margin: 0 auto;
   box-sizing: border-box;
   outline: none;
+  // Factory mode is a full-bleed canvas.
+  &:has(> app-factory-page) {
+    padding: 0;
+    max-width: none;
+  }
 }

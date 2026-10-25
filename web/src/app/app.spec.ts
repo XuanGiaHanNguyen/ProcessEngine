@@ -13,7 +13,7 @@ describe('App shell', () => {
     });
   });
 
-  it('shows the Auto / Play mode switch and the server status', async () => {
+  it('shows the Factory / Auto / Play mode switch and the server status', async () => {
     const fixture = TestBed.createComponent(App);
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
@@ -23,7 +23,7 @@ describe('App shell', () => {
     await fixture.whenStable();
     const el = fixture.nativeElement as HTMLElement;
     const links = [...el.querySelectorAll('nav a')].map((a) => a.textContent?.trim());
-    expect(links).toEqual(['Auto', 'Play']);
+    expect(links).toEqual(['Factory', 'Auto', 'Play']);
     expect(el.querySelector('.server-status')?.textContent).toContain('Server online');
   });
 });

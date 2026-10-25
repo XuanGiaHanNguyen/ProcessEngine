@@ -1,0 +1,278 @@
+:host {
+  display: block;
+  height: calc(100dvh - var(--header-h, 52px));
+  min-height: 480px;
+  color: #f3f4f7;
+  background: #23262e;
+}
+
+.stage {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.load-error {
+  margin: 0;
+  padding: 0.6rem 1rem;
+  background: #5a1d1d;
+}
+
+.panel {
+  background: rgba(17, 19, 24, 0.94);
+  border: 1px solid #2d313b;
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.left {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  bottom: 12px;
+  width: min(300px, calc(100% - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  > * {
+    pointer-events: auto;
+  }
+}
+
+.right {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: min(290px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  overflow: auto;
+}
+
+.purple {
+  background: #5a2fc2;
+  border: 2px solid #c9b6ff;
+}
+
+h2 {
+  font-size: 1.15rem;
+  margin: 0.35rem 0 0.4rem;
+}
+h3 {
+  font-size: 1rem;
+  margin: 0 0 0.6rem;
+}
+p {
+  margin: 0 0 0.5rem;
+  color: #d9dce3;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0.2rem 0;
+}
+
+.level-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  .level-label {
+    flex: 1;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #b8bdc9;
+  }
+  button {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: #2f3440;
+    color: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    &:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+    &:not(:disabled):hover,
+    &:focus-visible {
+      background: #5b3fd6;
+    }
+  }
+}
+
+.target {
+  color: #9ec1ff;
+  strong {
+    color: #fff;
+  }
+}
+
+.tests {
+  ul {
+    list-style: none;
+    margin: 0 -1rem 0.6rem;
+    padding: 0;
+    border-top: 1px solid #2d313b;
+  }
+  li {
+    border-bottom: 1px solid #2d313b;
+  }
+}
+
+.test-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+  background: none;
+  border: none;
+  color: #7fb0ff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  &.active {
+    background: #1d2130;
+    color: #fff;
+  }
+  &:hover,
+  &:focus-visible {
+    background: #252a38;
+  }
+  .amount {
+    color: #fff;
+    font-weight: 700;
+    &.neg {
+      color: #ff9b9b;
+    }
+  }
+}
+
+.spark-placeholder {
+  border: 1px dashed #3d4352;
+  border-radius: 8px;
+  padding: 0.8rem;
+  font-size: 0.8rem;
+  color: #9aa1b0;
+  margin-bottom: 0.6rem;
+}
+
+.build {
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.objectives {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.8rem;
+  li {
+    display: flex;
+    gap: 0.7rem;
+    align-items: flex-start;
+    padding: 0.4rem 0;
+  }
+  .check {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    margin-top: 1px;
+  }
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: #e5dcff;
+}
+
+.inspector {
+  position: relative;
+  .close {
+    position: absolute;
+    right: -4px;
+    top: -6px;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.4rem;
+    cursor: pointer;
+  }
+  dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.3rem 0.8rem;
+    margin: 0.6rem 0 0;
+  }
+  dt {
+    color: #e0d6ff;
+  }
+  dd {
+    margin: 0;
+    font-weight: 600;
+  }
+  .recipe-name {
+    color: #e5dcff;
+  }
+  .recipe {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .chip {
+    display: inline-block;
+    background: rgba(0, 0, 0, 0.28);
+    border-radius: 999px;
+    padding: 0.15rem 0.55rem;
+    margin: 0.15rem 0.2rem 0.15rem 0;
+    font-size: 0.85rem;
+  }
+  .arrow {
+    font-weight: 700;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  th {
+    color: #e5dcff;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.8rem;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 0.3rem 0.2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  }
+}
+
+@media (max-width: 760px) {
+  .right {
+    top: auto;
+    bottom: 12px;
+    max-height: 40%;
+  }
+  .left {
+    bottom: auto;
+  }
+  .tests {
+    display: none;
+  }
+}
