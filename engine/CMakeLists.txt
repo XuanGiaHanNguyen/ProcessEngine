@@ -1,6 +1,7 @@
 # Core engine: pure C++, no web or I/O code, no third-party dependencies.
 add_library(pf_engine
   src/bounds.cpp
+  src/factory/hint.cpp
   src/factory/level.cpp
   src/factory/sim.cpp
   src/factory/solvers.cpp

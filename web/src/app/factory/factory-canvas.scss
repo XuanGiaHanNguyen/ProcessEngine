@@ -22,15 +22,15 @@ app-factory-canvas {
   }
   .belt-edge {
     stroke: #14161b;
-    stroke-width: 12;
+    stroke-width: 8;
   }
   .belt-track {
     stroke: #e3bd3b;
-    stroke-width: 7;
+    stroke-width: 5;
   }
   .belt-dash {
     stroke: #8a6f1c;
-    stroke-width: 2.5;
+    stroke-width: 1.8;
     stroke-dasharray: 3 9;
     animation: pf-belt 0.9s linear infinite;
   }
@@ -43,7 +43,7 @@ app-factory-canvas {
   .belt.selected {
     .belt-edge {
       stroke: #b9a4ff;
-      stroke-width: 17;
+      stroke-width: 12;
     }
   }
   .belt-tag {
@@ -54,7 +54,7 @@ app-factory-canvas {
     }
     text {
       fill: #fff;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       text-anchor: middle;
     }
@@ -78,6 +78,26 @@ app-factory-canvas {
     stroke: #14161b;
     stroke-width: 1.5;
     pointer-events: none;
+    &.dim {
+      opacity: 0.12;
+    }
+  }
+
+  // Hovering or selecting a node or belt dims everything it is not connected to.
+  .viewport.focusing {
+    .belt:not(.hl) {
+      opacity: 0.16;
+    }
+    .belt.hl .belt-track {
+      stroke: #ffd447;
+    }
+    .node:not(.linked):not(.selected) {
+      opacity: 0.5;
+    }
+  }
+  .belt,
+  .node {
+    transition: opacity 0.15s;
   }
 
   .node {

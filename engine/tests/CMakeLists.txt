@@ -2,6 +2,7 @@ add_executable(pf_engine_tests
   baseline_solvers_test.cpp
   compact_state_test.cpp
   exact_solvers_test.cpp
+  factory_hint_test.cpp
   factory_solvers_test.cpp
   factory_test.cpp
   game_session_test.cpp

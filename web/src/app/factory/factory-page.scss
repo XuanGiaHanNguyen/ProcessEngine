@@ -440,3 +440,54 @@ p {
     display: none;
   }
 }
+
+.panel-tabs {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  margin: -0.2rem -0.3rem 0.8rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 999px;
+  button {
+    flex: 1;
+    padding: 0.3rem 0.4rem;
+    border: none;
+    border-radius: 999px;
+    background: none;
+    color: #e6defc;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    &.active {
+      background: #fff;
+      color: #4b1fa8;
+    }
+    &:not(.active):hover,
+    &:focus-visible {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+    }
+  }
+}
+
+.speed {
+  display: flex;
+  gap: 4px;
+  button {
+    flex: 1;
+    padding: 0.25rem;
+    border-radius: 7px;
+    border: 1px solid #3a4160;
+    background: none;
+    color: #c9cdd6;
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+    &.active {
+      background: #2f5bd6;
+      border-color: #2f5bd6;
+      color: #fff;
+    }
+  }
+}

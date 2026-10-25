@@ -19,7 +19,7 @@
       "id": "cotton-supply",
       "resource": "cotton",
       "max_rate": 40,
-      "unit_cost": 40,
+      "unit_cost": 20000,
       "x": 0,
       "y": 0
     },
@@ -27,7 +27,7 @@
       "id": "string-supply",
       "resource": "string",
       "max_rate": 24,
-      "unit_cost": 25,
+      "unit_cost": 12500,
       "x": 0,
       "y": 2
     }
@@ -36,7 +36,7 @@
     {
       "id": "loom",
       "name": "Loom",
-      "cost": 1500,
+      "cost": 750000,
       "recipes": [
         {
           "id": "fabric",
@@ -50,7 +50,7 @@
     {
       "id": "carder",
       "name": "Carder",
-      "cost": 1000,
+      "cost": 500000,
       "recipes": [
         {
           "id": "stuffing",
@@ -64,7 +64,7 @@
     {
       "id": "sewing",
       "name": "Sewing station",
-      "cost": 2000,
+      "cost": 1000000,
       "recipes": [
         {
           "id": "stuffed-animal",
@@ -79,7 +79,7 @@
   "market": {
     "x": 9,
     "y": 3,
-    "listings": [{"resource": "stuffed-animal", "price": 900, "demand": 3, "overflow_price": 500}]
+    "listings": [{"resource": "stuffed-animal", "price": 450000, "demand": 3, "overflow_price": 250000}]
   },
   "slots": [
     {"id": "s1", "x": 3, "y": 1},
@@ -98,7 +98,7 @@
       "for_hours": 4,
       "text": "Sell 2 stuffed animals an hour, 4 hours in a row"
     },
-    {"kind": "profit", "at_least": 9000, "text": "Earn $90"}
+    {"kind": "profit", "at_least": 4500000, "text": "Earn $45,000"}
   ],
   "reference_designs": [
     {
@@ -121,7 +121,7 @@
           {"from": "s3", "to": "market", "resource": "stuffed-animal", "weight": 1}
         ]
       },
-      "profit": 1620
+      "profit": 810000
     },
     {
       "name": "Best known",
@@ -147,7 +147,7 @@
         ],
         "orders": {"cotton-supply": 8, "string-supply": 5}
       },
-      "profit": 11620
+      "profit": 5810000
     }
   ]
 }

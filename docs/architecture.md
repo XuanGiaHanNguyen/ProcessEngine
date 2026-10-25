@@ -6,11 +6,9 @@ ProcessForge has three layers. Game rules live in exactly one place per game (th
 ```mermaid
 flowchart LR
   subgraph Browser["Browser (Angular, web/)"]
-    Auto["Auto mode<br/>editor · graph · solver panel<br/>results · comparison"]
-    Play["Play mode<br/>board · hints · reveal · replay"]
+    Factory["Toy factory<br/>Build: D3 floor · tests · playback<br/>Auto: optimizers · comparison<br/>Play: hints · score · timeline · share"]
     Api["ApiService<br/>(typed docs/api.md)"]
-    Auto --> Api
-    Play --> Api
+    Factory --> Api
   end
 
   subgraph Server["Server (C++ / Crow, server/)"]
@@ -63,6 +61,7 @@ A plain C++20 static library with no I/O and no third-party dependencies
 | `generator.hpp`, `random.hpp` | Seeded, platform-independent instance generator |
 | `factory/level.hpp` | Factory mode: `Level`, `Design`, `checkLevel`, `checkDesign` (spec error codes), warnings |
 | `factory/sim.hpp` — `simulate` | **The** implementation of the Factory rules (`docs/factory-spec.md`): five steps per hour, per-hour report |
+| `factory/hint.hpp` — `suggestChange` | The single change to a design that raises profit the most, every candidate checked and simulated |
 | `factory/solvers.hpp` | `FactorySolver` (non-virtual `solve()` re-simulates), `greedy`, `local_search`, `flow_lp`, `flowUpperBound` |
 | `factory/json.hpp` | Level and design parsing (in `pf_json`), report serialization |
 
@@ -101,23 +100,28 @@ A thin Crow wrapper (`pf_server_lib` + `pf_server`):
 
 ## Frontend (`web/`)
 
-Angular (standalone components, signals, zoneless). `ApiService` is the only place that
-knows URLs; `models.ts` mirrors `docs/api.md`. `WorkspaceStore` holds the instance shared by
-both modes; `SolveRun` wraps a job (submit, follow the WebSocket, refresh results, cancel)
-and is reused for Auto-mode runs and the Play-mode reveal. Charts use Chart.js; the process
-graph and Gantt timeline are hand-drawn SVG. The frontend never re-implements rules: legal
-moves, disabled-button reasons, and chart timelines all come from the server.
+Angular (standalone components, signals, zoneless). The web app is one screen, the toy
+factory (`web/src/app/factory/`); `ApiService` is the only place that knows URLs and covers
+the factory endpoints. The scheduling engine's solvers and game sessions are served by the
+same API (below) and used from the CLI tools. The frontend never re-implements rules: checks,
+profits, hints and per-hour reports all come from the server.
 
-**Factory mode** (`web/src/app/factory/`): `FactoryStore` holds the level, the draft design
-(undo/redo, saved per level in localStorage), the server's check of it, and the tested
-factories with their playback hour. `FactoryCanvas` draws the floor with D3 (d3-zoom,
-d3-drag for laying belts, d3-shape belt links, d3-scale layout, D3 transitions for items
-on belts); `MoneyChart` is a D3 area chart that doubles as the hour scrubber. Edits are pure
-functions in `design-ops.ts`.
+`FactoryStore` holds the level, the draft design (undo/redo, saved per level in
+localStorage), the server's check of it, the tested factories with their playback hour and
+speed, the last Auto run and the last hint. `FactoryCanvas` draws the floor with D3 (d3-zoom,
+d3-drag for laying belts, d3-scale layout, D3 transitions for items on belts). Belts are
+routed in four steps: the side of each node they leave or enter, a fanned-out port per belt
+on that side, the gap between columns they turn in (avoiding nodes), and a lane of their own
+in that gap, ordered so their runs do not cross; corners are cubic curves. Hovering or
+selecting a node or belt dims everything it is not connected to. `MoneyChart` (D3 area chart,
+also the hour scrubber), `ComparisonChart` (D3 bars against the best known profit and the
+bound) and `MachineTimeline` (D3 grid of machine status per hour) are the charts. The right
+panel has three tabs: Build (`FactoryInspector`), Auto (`FactoryAuto`) and Play
+(`FactoryPlay`). Edits are pure functions in `design-ops.ts`.
 
 ## Data flows
 
-### Auto mode: solve and stream
+### Scheduling: solve and stream (API)
 
 ```mermaid
 sequenceDiagram
@@ -145,7 +149,7 @@ sequenceDiagram
   S-->>UI: worker slots + inventory per tick → Gantt and charts
 ```
 
-### Play mode: session
+### Scheduling: game session (API)
 
 ```mermaid
 sequenceDiagram
@@ -175,7 +179,7 @@ sequenceDiagram
   UI->>S: POST /redo (step through the replay)
 ```
 
-### Factory mode: edit, test, compare
+### Toy factory: edit, test, auto-build, hint
 
 ```mermaid
 sequenceDiagram
@@ -196,13 +200,16 @@ sequenceDiagram
   S->>E: solvers in parallel + flowUpperBound
   S-->>UI: {bound, results[design, profit]}
   UI->>S: POST /api/factory/simulate (each solver design)
+  UI->>S: POST /api/factory/hint {level, draft}
+  S->>E: suggestChange(level, design): every single change, checked and simulated
+  S-->>UI: {found, description, gain, design}
 ```
 
 ## Testing and tooling
 
 | Layer | Tests |
 |---|---|
-| Engine | GoogleTest: Factory rules on a tiny level (pipeline timing, blocking, capacity, round-robin, demand tiers, error codes), every level's reference profits, factory solvers under the LP bound; every rule violation, JSON errors, hand-made instances, property tests (1000 random instances × every solver vs brute force, deterministic seeds, game replay), bounds, timeline |
+| Engine | GoogleTest: Factory rules on a tiny level (pipeline timing, blocking, capacity, round-robin, demand tiers, error codes), every level's reference profits, factory solvers under the LP bound, hints that only ever raise profit; every rule violation, JSON errors, hand-made instances, property tests (1000 random instances × every solver vs brute force, deterministic seeds, game replay), bounds, timeline |
 | Server | Integration tests over real HTTP and WebSocket: solve, cancel, limits, 4xx errors, sessions, expiry, cap, streaming |
-| Web | Vitest component/unit tests (D3 canvas, design edits, objectives); Playwright E2E (Factory edit/drag/test/playback/compare, Auto flow, full manual playthrough, replay, share links; fails on console errors or 409s) |
+| Web | Vitest component/unit tests (D3 canvas and charts, design edits, objectives, share links); Playwright E2E (factory edit/drag/test/playback, Auto runs, hints, score, timeline, share links, level switching; fails on console errors or 409s) |
 | CI | GCC and Clang `-Werror`, ASan + UBSan, TSan (server), clang-format, clang-tidy, ESLint, Prettier, benchmarks, `docker compose up` smoke test |

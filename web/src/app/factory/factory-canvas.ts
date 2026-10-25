@@ -17,7 +17,7 @@ import { Selection, select } from 'd3-selection';
 import 'd3-transition';
 import { ZoomBehavior, zoom, zoomIdentity } from 'd3-zoom';
 
-import { Design, FactoryLevel, HourReport, money } from './factory-models';
+import { Belt, Design, FactoryLevel, HourReport, money } from './factory-models';
 import { iconFor, itemColor } from './icons';
 
 type NodeKind = 'supplier' | 'machine' | 'slot' | 'market';
@@ -37,19 +37,45 @@ interface CanvasNode {
   status?: string;
 }
 
-/** A drawable belt between two node centers. */
+/** A drawable belt between ports on two nodes. */
 interface CanvasBelt {
   key: string;
   index: number;
+  from: string;
+  to: string;
   resource: string;
   weight: number;
   /** Units carried this hour during playback, else null. */
   moved: number | null;
-  /** x of the vertical run. */
+  /** x of the vertical run (its lane). */
   bend: number;
+  /** +1 when the belt enters its target from the left, -1 from the right. */
+  entry: 1 | -1;
+  /** Extra distance of its tag from the target, so tags of neighboring belts do not overlap. */
+  tagShift: number;
   source: [number, number];
   target: [number, number];
   active: boolean;
+}
+
+/** A belt while it is being routed: its nodes, side, ports and the gap it turns in. */
+interface Route {
+  index: number;
+  belt: Belt;
+  from: CanvasNode;
+  to: CanvasNode;
+  entry: 1 | -1;
+  source: [number, number];
+  target: [number, number];
+  gap: number;
+  tagShift: number;
+}
+
+/** One end of a routed belt on a side of a node. */
+interface PortUse {
+  route: Route;
+  end: 'source' | 'target';
+  other: CanvasNode;
 }
 
 /** What the canvas highlights: a node by id, or a belt by its index in the design. */
@@ -58,12 +84,17 @@ export type CanvasSelection = { kind: 'node'; id: string } | { kind: 'belt'; ind
 const UNIT_X = 72;
 const UNIT_Y = 64;
 const R = 30;
-const CORNER = 12;
+/** Radius of a belt's turns: large enough to read as a gentle curve. */
+const CORNER = 22;
+/** Vertical spacing between belts leaving or entering the same side of a node. */
+const PORT_GAP = 10;
+/** Horizontal spacing between the vertical runs of belts that turn in the same gap. */
+const LANE_GAP = 12;
 
 /**
- * A belt as a straight conveyor: across, down (or up) at the midpoint, and across again,
- * with rounded corners. Belts from one node share their vertical run, so they read as one
- * conveyor that branches.
+ * A belt as a conveyor: across, a curved turn into its own vertical lane, and a curved turn
+ * back across into the target. Each belt has its own ports and lane, so belts never run on
+ * top of each other.
  */
 export function beltPath(d: {
   source: [number, number];
@@ -76,13 +107,16 @@ export function beltPath(d: {
   const xm = d.bend;
   const dir = y2 > y1 ? 1 : -1;
   const r = Math.min(CORNER, Math.abs(y2 - y1) / 2, Math.abs(xm - x1), Math.abs(x2 - xm));
-  const hx = x2 >= xm ? 1 : -1;
+  const hx1 = xm >= x1 ? 1 : -1;
+  const hx2 = x2 >= xm ? 1 : -1;
+  // Cubic corners (control points at 55% of the radius) look rounder than quadratic ones.
+  const k = r * 0.45;
   return [
     `M${x1},${y1}`,
-    `H${xm - r}`,
-    `Q${xm},${y1} ${xm},${y1 + dir * r}`,
+    `H${xm - hx1 * r}`,
+    `C${xm - hx1 * k},${y1} ${xm},${y1 + dir * k} ${xm},${y1 + dir * r}`,
     `V${y2 - dir * r}`,
-    `Q${xm},${y2} ${xm + hx * r},${y2}`,
+    `C${xm},${y2 - dir * k} ${xm + hx2 * k},${y2} ${xm + hx2 * r},${y2}`,
     `H${x2}`,
   ].join('');
 }
@@ -141,6 +175,9 @@ export class FactoryCanvas {
   private zoomBehavior?: ZoomBehavior<SVGSVGElement, unknown>;
   private bounds = { w: 0, h: 0 };
   private nodes: CanvasNode[] = [];
+  private belts: CanvasBelt[] = [];
+  /** The level whose items are on the floor. */
+  private itemsLevel?: string;
   private flowTimer?: ReturnType<typeof setInterval>;
   private readonly reducedMotion =
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -238,7 +275,7 @@ export class FactoryCanvas {
         icon: iconFor(s.resource),
         title: level.resources.find((r) => r.id === s.resource)?.name ?? s.resource,
         badge: `${rate}/h`,
-        sub: report ? `stock ${report.stock[s.id] ?? 0}` : `x${money(s.unit_cost)}`,
+        sub: report ? `stock ${report.stock[s.id] ?? 0}` : `${money(s.unit_cost)} each`,
         active: rate > 0,
       });
     }
@@ -304,8 +341,6 @@ export class FactoryCanvas {
     });
 
     const byId = new Map(nodes.map((n) => [n.id, n]));
-    // Where to turn: in a gap between columns, preferring one whose two straight runs do
-    // not pass through other nodes, then the one nearest the source.
     const columns = [...new Set(nodes.map((n) => n.x))].sort((a, b) => a - b);
     const crosses = (y: number, xa: number, xb: number, skip: CanvasNode[]) =>
       nodes.filter(
@@ -315,50 +350,124 @@ export class FactoryCanvas {
           n.x + R > Math.min(xa, xb) &&
           n.x - R < Math.max(xa, xb),
       ).length;
-    const bendFor = (from: CanvasNode, to: CanvasNode, x1: number, x2: number): number => {
-      if (x2 <= x1) return x1 + CORNER + 4;
+
+    // 1. Which side of each node a belt leaves or enters. Belts leave from the right; a
+    // target further right is entered from its left, anything else from its right.
+    const routes: Route[] = [];
+    for (const [index, b] of (design?.belts ?? []).entries()) {
+      const from = byId.get(b.from);
+      const to = byId.get(b.to);
+      if (!from || !to) continue;
+      const entry = to.x > from.x + R ? 1 : -1;
+      routes.push({
+        index,
+        belt: b,
+        from,
+        to,
+        entry,
+        source: [0, 0],
+        target: [0, 0],
+        gap: 0,
+        tagShift: 0,
+      });
+    }
+
+    // 2. Ports: belts sharing a side of a node fan out, ordered by where their other end is,
+    // so they leave without crossing.
+    const sides = new Map<string, PortUse[]>();
+    const addSide = (key: string, item: PortUse) =>
+      sides.set(key, [...(sides.get(key) ?? []), item]);
+    for (const r of routes) {
+      addSide(`${r.from.id}|R`, { route: r, end: 'source', other: r.to });
+      addSide(`${r.to.id}|${r.entry > 0 ? 'L' : 'R'}`, { route: r, end: 'target', other: r.from });
+    }
+    for (const [key, items] of sides) {
+      const [id, side] = key.split('|');
+      const node = byId.get(id)!;
+      items.sort((a, b) => a.other.y - b.other.y || a.other.x - b.other.x);
+      const gap = Math.min(PORT_GAP, (1.3 * R) / items.length);
+      items.forEach((item, i) => {
+        const off = (i - (items.length - 1) / 2) * gap;
+        const dx = Math.sqrt(R * R - off * off);
+        item.route[item.end] = [node.x + (side === 'R' ? dx : -dx), node.y + off];
+        if (item.end === 'target') item.route.tagShift = (i % 2) * 26;
+      });
+    }
+
+    // 3. Which gap between columns each belt turns in: one whose straight runs do not pass
+    // through other nodes, nearest the source.
+    for (const r of routes) {
+      const [x1] = r.source;
+      const [x2] = r.target;
+      const right = columns.find((c) => c > r.from.x);
+      if (r.entry < 0 || x2 <= x1) {
+        r.gap = right !== undefined ? (r.from.x + right) / 2 : x1 + CORNER + 16;
+        continue;
+      }
       const gaps = columns
         .slice(0, -1)
         .map((c, i) => (c + columns[i + 1]) / 2)
         .filter((g) => g > x1 && g < x2);
-      if (!gaps.length) return (x1 + x2) / 2;
+      if (!gaps.length) {
+        r.gap = (x1 + x2) / 2;
+        continue;
+      }
       let best = gaps[0];
       let bestHits = Infinity;
       for (const g of gaps) {
-        const hits = crosses(from.y, x1, g, [from, to]) + crosses(to.y, g, x2, [from, to]);
+        const skip = [r.from, r.to];
+        const hits = crosses(r.source[1], x1, g, skip) + crosses(r.target[1], g, x2, skip);
         if (hits < bestHits) {
           best = g;
           bestHits = hits;
         }
       }
-      return best;
-    };
-    const belts: CanvasBelt[] = [];
-    for (const [index, b] of (design?.belts ?? []).entries()) {
-      const from = byId.get(b.from);
-      const to = byId.get(b.to);
-      if (!from || !to) continue;
-      const source: [number, number] = [from.x + R, from.y];
-      // A target in the same column (or to the left) is entered from its right side.
-      const target: [number, number] = to.x > from.x + R ? [to.x - R, to.y] : [to.x + R, to.y];
-      belts.push({
-        key: `${b.from}>${b.to}:${b.resource}`,
-        bend: bendFor(from, to, source[0], target[0]),
-        index,
-        resource: b.resource,
-        weight: b.weight ?? 1,
-        moved: report ? (report.belts[index] ?? 0) : null,
-        source,
-        target,
-        active: report ? (report.belts[index] ?? 0) > 0 : from.active,
-      });
+      r.gap = best;
     }
+
+    // 4. Lanes: belts turning in the same gap get their own vertical run. Downward belts
+    // from higher sources go further right (and the mirror for upward ones), which keeps
+    // their runs from crossing.
+    const lanes = new Map<number, Route[]>();
+    for (const r of routes) {
+      if (Math.abs(r.target[1] - r.source[1]) < 1) continue;
+      lanes.set(r.gap, [...(lanes.get(r.gap) ?? []), r]);
+    }
+    const bend = new Map<Route, number>();
+    for (const [gap, list] of lanes) {
+      const down = list.filter((r) => r.target[1] > r.source[1]);
+      const up = list.filter((r) => r.target[1] < r.source[1]);
+      down.sort((a, b) => b.source[1] - a.source[1] || a.target[1] - b.target[1]);
+      up.sort((a, b) => a.source[1] - b.source[1] || b.target[1] - a.target[1]);
+      const ordered = [...down, ...up];
+      const col = columns.findIndex((c) => c > gap);
+      const width = col > 0 ? columns[col] - columns[col - 1] - 2 * R - 2 * CORNER : 4 * LANE_GAP;
+      const spacing = Math.min(LANE_GAP, width / Math.max(1, ordered.length - 1));
+      ordered.forEach((r, i) => bend.set(r, gap + (i - (ordered.length - 1) / 2) * spacing));
+    }
+
+    const belts: CanvasBelt[] = routes.map((r) => ({
+      key: `${r.belt.from}>${r.belt.to}:${r.belt.resource}`,
+      index: r.index,
+      from: r.from.id,
+      to: r.to.id,
+      bend: bend.get(r) ?? r.gap,
+      entry: r.entry,
+      tagShift: r.tagShift,
+      resource: r.belt.resource,
+      weight: r.belt.weight ?? 1,
+      moved: report ? (report.belts[r.index] ?? 0) : null,
+      source: r.source,
+      target: r.target,
+      active: report ? (report.belts[r.index] ?? 0) > 0 : r.from.active,
+    }));
     return { nodes, belts };
   }
 
   private render(): void {
     const { nodes, belts } = this.model();
     const vp = select(this.svgRef().nativeElement).select<SVGGElement>('g.viewport');
+    this.belts = belts;
 
     const beltLayer = this.layer(vp, 'belts');
     const sel = this.selection();
@@ -374,17 +483,19 @@ export class FactoryCanvas {
         const tag = g.append('g').attr('class', 'belt-tag');
         tag
           .append('rect')
-          .attr('rx', 6)
-          .attr('x', -15)
-          .attr('y', -10)
-          .attr('width', 30)
-          .attr('height', 20);
+          .attr('rx', 5)
+          .attr('x', -12)
+          .attr('y', -8)
+          .attr('width', 24)
+          .attr('height', 16);
         tag.append('text').attr('dy', '0.35em');
         g.append('title');
         g.on('click', (e: MouseEvent, d) => {
           e.stopPropagation();
           this.beltSelected.emit(d.index);
         });
+        g.on('mouseenter', (_e, d) => this.focus({ kind: 'belt', index: d.index }));
+        g.on('mouseleave', () => this.focus(this.selection()));
         return g;
       });
     belt.classed('idle', (d) => !d.active);
@@ -398,13 +509,24 @@ export class FactoryCanvas {
       .attr('transform', (d) => {
         // On the last straight run, just before the target.
         const [x2, y2] = d.target;
-        return `translate(${x2 - 22}, ${y2})`;
+        return `translate(${x2 - d.entry * (20 + d.tagShift)}, ${y2})`;
       })
       .select('text')
       .text((d) => (d.moved === null ? `×${d.weight}` : `${d.moved}`));
     belt.select('title').text((d) => d.key.replace('>', ' → ').replace(':', ' · '));
 
-    this.layer(vp, 'items');
+    // Items in flight disappear with their belt, and all of them when the level changes.
+    const keys = new Set(belts.map((b) => b.key));
+    const levelId = this.level()?.id;
+    const newLevel = levelId !== this.itemsLevel;
+    this.itemsLevel = levelId;
+    this.layer(vp, 'items')
+      .selectAll<SVGCircleElement, unknown>('circle.item')
+      .filter(function () {
+        return newLevel || !keys.has(this.getAttribute('data-belt') ?? '');
+      })
+      .interrupt()
+      .remove();
 
     const nodeLayer = this.layer(vp, 'nodes');
     const node = nodeLayer
@@ -429,6 +551,8 @@ export class FactoryCanvas {
           e.stopPropagation();
           this.nodeSelected.emit(d.id);
         });
+        g.on('mouseenter', (_e, d) => this.focus({ kind: 'node', id: d.id }));
+        g.on('mouseleave', () => this.focus(this.selection()));
         g.on('keydown', (e: KeyboardEvent, d) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -469,6 +593,29 @@ export class FactoryCanvas {
         .attr('y', d.sub ? -18 : -11)
         .attr('width', w)
         .attr('height', d.sub ? 36 : 22);
+    });
+    this.focus(sel);
+  }
+
+  /**
+   * Highlights what `on` connects: a node's belts and the nodes at their other ends, or one
+   * belt and its two nodes. Everything else dims, so it is clear which belt goes where.
+   */
+  private focus(on: CanvasSelection): void {
+    const vp = select(this.svgRef().nativeElement).select<SVGGElement>('g.viewport');
+    const belts =
+      on?.kind === 'node'
+        ? this.belts.filter((b) => b.from === on.id || b.to === on.id)
+        : on?.kind === 'belt'
+          ? this.belts.filter((b) => b.index === on.index)
+          : [];
+    const linked = new Set(belts.flatMap((b) => [b.from, b.to]));
+    const hl = new Set(belts.map((b) => b.key));
+    vp.classed('focusing', belts.length > 0);
+    vp.selectAll<SVGGElement, CanvasBelt>('g.belt').classed('hl', (d) => hl.has(d.key));
+    vp.selectAll<SVGGElement, CanvasNode>('g.node').classed('linked', (d) => linked.has(d.id));
+    vp.selectAll<SVGCircleElement, unknown>('circle.item').classed('dim', function () {
+      return belts.length > 0 && !hl.has(this.getAttribute('data-belt') ?? '');
     });
   }
 
@@ -523,6 +670,8 @@ export class FactoryCanvas {
       items
         .append('circle')
         .attr('class', 'item')
+        .attr('data-belt', d.key)
+        .classed('dim', vp.classed('focusing') && !select(this).classed('hl'))
         .attr('r', 4.5)
         .attr('fill', itemColor(d.resource))
         .transition()

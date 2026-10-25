@@ -168,19 +168,19 @@ charts and objectives use only this report.
   "buffer_batches": 2,
   "budget": null,
   "resources": [{"id": "cotton", "name": "Cotton", "kind": "raw"}],
-  "suppliers": [{"id": "cotton-supply", "resource": "cotton", "max_rate": 40, "unit_cost": 40, "x": 0, "y": 0}],
+  "suppliers": [{"id": "cotton-supply", "resource": "cotton", "max_rate": 40, "unit_cost": 20000, "x": 0, "y": 0}],
   "machine_types": [
-    {"id": "loom", "name": "Loom", "cost": 1500,
+    {"id": "loom", "name": "Loom", "cost": 750000,
      "recipes": [{"id": "fabric", "name": "Weave fabric", "inputs": {"cotton": 4, "string": 2},
                   "outputs": {"fabric": 2}, "hours": 1}]}
   ],
   "market": {"x": 8, "y": 2,
-             "listings": [{"resource": "stuffed-animal", "price": 900, "demand": 3, "overflow_price": 500}]},
+             "listings": [{"resource": "stuffed-animal", "price": 450000, "demand": 3, "overflow_price": 250000}]},
   "slots": [{"id": "s1", "x": 3, "y": 0}],
-  "objectives": [{"kind": "profit", "at_least": 9000, "text": "Earn $90"}],
+  "objectives": [{"kind": "profit", "at_least": 4500000, "text": "Earn $45,000"}],
   "reference_designs": [
-    {"name": "Initial", "initial": true, "design": {...}, "profit": 1620},
-    {"name": "Best known", "design": {...}, "profit": 9980}
+    {"name": "Initial", "initial": true, "design": {...}, "profit": 810000},
+    {"name": "Best known", "design": {...}, "profit": 5810000}
   ]
 }
 ```
@@ -217,7 +217,7 @@ Objectives are independent checkboxes: each one is met once any test of the leve
 `hours` 1..168; at most 32 resources, 8 suppliers, 12 machine types, 4 recipes per
 type, 24 slots, 256 belts; recipe quantities 1..1000; recipe hours 1..24;
 `belt_capacity` 1..1000; `buffer_batches` 1..10; `max_rate` 0..1000; prices and costs
-0..1 000 000 cents; `demand` 0..1000. Ids are 1–40 characters of `[a-z0-9-]`; `"market"`
+0..100 000 000 cents ($1,000,000); `demand` 0..1000. Ids are 1–40 characters of `[a-z0-9-]`; `"market"`
 is reserved.
 
 ## The toy catalog
@@ -273,8 +273,8 @@ Both last 24 hours, with belt capacity 10 and buffers of 2 batches.
 
 | Level | Slots | Products | Initial | Best known | Upper bound |
 |---|---|---|---|---|---|
-| **Easy:** First Stitch | 5 | stuffed animal (cotton, string) | $16.20 | $116.20 | $317.51 |
-| **Hard:** Full Line | 10 | all four toys (all five raw materials) | $213.40 | $331.60 | $795.69 |
+| **Easy:** First Stitch | 5 | stuffed animal (cotton, string) | $8,100 | $58,100 | $158,755 |
+| **Hard:** Full Line | 10 | all four toys (all five raw materials) | $106,700 | $165,800 | $397,845 |
 
 "Best known" is the best of three 10-second `local_search` runs (`pf_factory`, seeds 1–3);
 it is a lower bound, not a proven optimum. "Upper bound" is the flow LP relaxation
@@ -283,10 +283,10 @@ files store each best-known design, and the engine's tests pin its profit.
 
 | Level | Best known design | Orders per hour | Sales | Purchases | Build | Profit |
 |---|---|---|---|---|---|---|
-| Easy | loom, carder, 2 × sewing (animals) | cotton 8, string 5 | $288.00 | $106.80 | $65.00 | **$116.20** |
-| Hard | loom, carder, 2 × sewing (animals), 2 × woodshop (bodies), molder, 2 × assembly (guitars), press | cotton 8, string 9, plastic 1, wood 3 | $710.00 | $200.40 | $178.00 | **$331.60** |
+| Easy | loom, carder, 2 × sewing (animals) | cotton 8, string 5 | $144,000 | $53,400 | $32,500 | **$58,100** |
+| Hard | loom, carder, 2 × sewing (animals), 2 × woodshop (bodies), molder, 2 × assembly (guitars), press | cotton 8, string 9, plastic 1, wood 3 | $355,000 | $100,200 | $89,000 | **$165,800** |
 
-The Hard press never runs (no rubber is ordered), yet removing it costs $69: it takes a
+The Hard press never runs (no rubber is ordered), yet removing it costs $34,500: it takes a
 share of the single plastic per hour, which spaces out peg production so guitars rarely
 arrive two in the same hour (when the second one sells at the overflow price). Timing is
 part of the game.
@@ -299,19 +299,19 @@ sewing, animals → market.
 
 | Hour | What happens |
 |---|---|
-| 0 | 8 cotton and 4 string delivered ($4.20). Round-robin sends cotton loom, carder, loom, ... (4 each) and string loom, sewing, ... (2 each). |
+| 0 | 8 cotton and 4 string delivered ($2,100). Round-robin sends cotton loom, carder, loom, ... (4 each) and string loom, sewing, ... (2 each). |
 | 1 | They arrive. The loom (4 cotton + 2 string) and the carder (3 cotton) start. The sewing station has string only. |
 | 2 | Both complete: 2 fabric, 4 stuffing, dispatched to the sewing station. |
 | 3 | The sewing station has 2 fabric + 4 stuffing + 2 string and starts (2 hours). |
 | 5 | It completes 2 animals, dispatched; it starts again with inputs that arrived in hour 4. |
-| 6 | 2 animals sold at $9.00 (demand 3). |
+| 6 | 2 animals sold at $4,500 each (demand 3). |
 | 6–23 | The sewing station is the bottleneck: one batch every 2 hours, so 2 animals sell in hours 6, 8, ..., 22. The loom and carder block on full output buffers every other hour, and supplier stock piles up (80 cotton, 38 string unused at the end). The batch completing in hour 23 is dispatched but would arrive in hour 24, after the end. |
 
 ```
-sales      = 9 sales × 2 animals × $9.00          = $162.00
-purchases  = 24 hours × (8 × $0.40 + 4 × $0.25)   = $100.80
-build      = $15 + $10 + $20                       =  $45.00
-profit     = 162.00 − 100.80 − 45.00               =  $16.20
+sales      = 9 sales × 2 animals × $4,500         = $81,000
+purchases  = 24 hours × (8 × $200 + 4 × $125)     = $50,400
+build      = $7,500 + $5,000 + $10,000             = $22,500
+profit     = 81,000 − 50,400 − 22,500              =  $8,100
 ```
 
 A separate reference model (a short script used to tune the levels), the hand calculation

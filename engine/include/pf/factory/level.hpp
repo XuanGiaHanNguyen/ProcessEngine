@@ -171,7 +171,7 @@ inline constexpr int kMaxRecipeHours = 24;
 inline constexpr int kMaxBeltCapacity = 1000;
 inline constexpr int kMaxBufferBatches = 10;
 inline constexpr int kMaxRate = 1000;
-inline constexpr Cents kMaxMoney = 1'000'000;
+inline constexpr Cents kMaxMoney = 100'000'000;
 inline constexpr int kMaxDemand = 1000;
 inline constexpr int kMaxWeight = 10;
 }  // namespace limits

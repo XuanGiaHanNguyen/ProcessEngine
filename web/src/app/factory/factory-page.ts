@@ -1,18 +1,39 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 
 import * as ops from './design-ops';
+import { FactoryAuto } from './factory-auto';
 import { CanvasSelection, FactoryCanvas } from './factory-canvas';
 import { FactoryInspector } from './factory-inspector';
 import { Design, money } from './factory-models';
 import { iconFor } from './icons';
+import { FactoryPlay } from './factory-play';
 import { MoneyChart } from './money-chart';
 import { FactoryStore } from './factory-store';
 
-/** Factory mode: edit a toy factory on a D3 floor, check it, and test it. */
+type PanelId = 'build' | 'auto' | 'play';
+
+/**
+ * The toy factory: edit it on a D3 floor, test and play it back, let the optimizers build
+ * it (Auto), and get hints, a score, a timeline and share links (Play).
+ */
 @Component({
   selector: 'app-factory-page',
-  imports: [FactoryCanvas, FactoryInspector, MoneyChart, NgTemplateOutlet],
+  imports: [
+    FactoryAuto,
+    FactoryCanvas,
+    FactoryInspector,
+    FactoryPlay,
+    MoneyChart,
+    NgTemplateOutlet,
+  ],
   providers: [FactoryStore],
   templateUrl: './factory-page.html',
   styleUrl: './factory-page.scss',
@@ -22,6 +43,13 @@ import { FactoryStore } from './factory-store';
 export class FactoryPage implements OnInit {
   protected readonly store = inject(FactoryStore);
   protected readonly money = money;
+  protected readonly panels: { id: PanelId; label: string }[] = [
+    { id: 'build', label: '🔧 Build' },
+    { id: 'auto', label: '🤖 Auto' },
+    { id: 'play', label: '💡 Play' },
+  ];
+  /** Which tab of the right panel is open. */
+  protected readonly panel = signal<PanelId>('build');
 
   protected readonly target = computed(
     () =>
@@ -105,7 +133,11 @@ export class FactoryPage implements OnInit {
   });
 
   ngOnInit(): void {
-    void this.store.init();
+    // A share link (?level=…&design=…) opens that level with that design as the draft.
+    const params = new URLSearchParams(location.search);
+    const shared = { level: params.get('level'), design: params.get('design') };
+    if (shared.level) history.replaceState(null, '', location.pathname);
+    void this.store.init(shared);
   }
 
   /** Tab label for the i-th level: Easy and Hard when there are two. */

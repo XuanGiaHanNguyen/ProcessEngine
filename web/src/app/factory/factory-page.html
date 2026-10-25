@@ -57,11 +57,10 @@
         <button
           type="button"
           class="link"
-          (click)="store.compare()"
-          [disabled]="store.comparing()"
-          title="Run the optimizers on this level and add their factories to the list"
+          (click)="panel.set('auto')"
+          title="Let the optimizers build this factory and compare them with yours"
         >
-          {{ store.comparing() ? 'Solving…' : '🤖 Compare' }}
+          {{ store.comparing() ? 'Solving…' : '🤖 Auto' }}
         </button>
       </div>
       @if (store.bound(); as bound) {
@@ -113,6 +112,18 @@
                     {{ store.playing() ? '⏸ Pause' : '▶ Play' }}
                   </button>
                   <button type="button" (click)="store.stepBy(1)" aria-label="Next hour">▶|</button>
+                </div>
+                <div class="speed" role="group" aria-label="Playback speed">
+                  @for (s of [1, 2, 4]; track s) {
+                    <button
+                      type="button"
+                      [class.active]="store.speed() === s"
+                      [attr.aria-pressed]="store.speed() === s"
+                      (click)="store.setSpeed(s)"
+                    >
+                      {{ s }}×
+                    </button>
+                  }
                 </div>
                 <button type="button" class="wide" (click)="store.editFrom(t.id)">
                   Edit from {{ t.name }}
@@ -191,39 +202,62 @@
     </section>
   </aside>
 
-  <aside class="right panel purple" aria-label="Inspector">
-    @if (store.viewedTest(); as t) {
-      <section aria-label="Test details">
-        @if (inspectedHour(); as m) {
-          <h3>{{ m.title }}</h3>
-          <p class="hour-status {{ m.status }}">{{ m.statusText }}</p>
-          <dl>
-            @for (b of m.buffers; track b.label) {
-              <dt>{{ b.label }}</dt>
-              <dd>{{ b.value }}</dd>
+  <aside class="right panel purple" aria-label="Inspector, Auto and Play">
+    <div class="panel-tabs" role="tablist" aria-label="Panel">
+      @for (t of panels; track t.id) {
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="panel() === t.id"
+          [class.active]="panel() === t.id"
+          (click)="panel.set(t.id)"
+        >
+          {{ t.label }}
+        </button>
+      }
+    </div>
+    @switch (panel()) {
+      @case ('auto') {
+        <app-factory-auto />
+      }
+      @case ('play') {
+        <app-factory-play (openAuto)="panel.set('auto')" />
+      }
+      @default {
+        @if (store.viewedTest(); as t) {
+          <section aria-label="Test details">
+            @if (inspectedHour(); as m) {
+              <h3>{{ m.title }}</h3>
+              <p class="hour-status {{ m.status }}">{{ m.statusText }}</p>
+              <dl>
+                @for (b of m.buffers; track b.label) {
+                  <dt>{{ b.label }}</dt>
+                  <dd>{{ b.value }}</dd>
+                }
+              </dl>
+            } @else {
+              <h3>{{ t.name }} · Hour {{ store.hour() + 1 }}</h3>
+              <dl class="totals">
+                <dt>Sales</dt>
+                <dd>{{ money(t.result.sales) }}</dd>
+                <dt>Purchases</dt>
+                <dd>−{{ money(t.result.purchases) }}</dd>
+                <dt>Build</dt>
+                <dd>−{{ money(t.result.build) }}</dd>
+                <dt>Profit</dt>
+                <dd>{{ money(t.result.profit) }}</dd>
+              </dl>
+              <p class="hint">Click a machine to see what it is doing this hour.</p>
             }
-          </dl>
+          </section>
+          <h3 class="objectives-title">Objectives</h3>
+          <ng-container *ngTemplateOutlet="objectiveList" />
         } @else {
-          <h3>{{ t.name }} · Hour {{ store.hour() + 1 }}</h3>
-          <dl class="totals">
-            <dt>Sales</dt>
-            <dd>{{ money(t.result.sales) }}</dd>
-            <dt>Purchases</dt>
-            <dd>−{{ money(t.result.purchases) }}</dd>
-            <dt>Build</dt>
-            <dd>−{{ money(t.result.build) }}</dd>
-            <dt>Profit</dt>
-            <dd>{{ money(t.result.profit) }}</dd>
-          </dl>
-          <p class="hint">Click a machine to see what it is doing this hour.</p>
+          <app-factory-inspector>
+            <div objectives><ng-container *ngTemplateOutlet="objectiveList" /></div>
+          </app-factory-inspector>
         }
-      </section>
-      <h3 class="objectives-title">Objectives</h3>
-      <ng-container *ngTemplateOutlet="objectiveList" />
-    } @else {
-      <app-factory-inspector>
-        <div objectives><ng-container *ngTemplateOutlet="objectiveList" /></div>
-      </app-factory-inspector>
+      }
     }
   </aside>
 </div>

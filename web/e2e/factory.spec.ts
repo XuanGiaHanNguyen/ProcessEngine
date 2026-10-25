@@ -31,7 +31,7 @@ async function openLevelOne(page: Page) {
   await page.goto('/factory');
   await expect(page.getByRole('heading', { name: 'First Stitch' })).toBeVisible();
   await expect(page.locator('.test-row').first()).toContainText('Initial');
-  await expect(page.locator('.test-row').first()).toContainText('$16.20');
+  await expect(page.locator('.test-row').first()).toContainText('$8,100');
 }
 
 test('edit, test and play back a factory', async ({ page, problems }) => {
@@ -60,12 +60,12 @@ test('edit, test and play back a factory', async ({ page, problems }) => {
   await page.getByLabel('Order per hour (number)').fill('7');
   await page.getByLabel('Order per hour (number)').press('Enter');
   await expect(page.locator('g.node.supplier .badge-main').first()).toHaveText('7/h');
-  await expect(page.locator('.draft .build')).toContainText('$65.00');
+  await expect(page.locator('.draft .build')).toContainText('$32,500');
 
   // Test it: the result is scored by the server and played back from hour 1.
   await page.getByRole('button', { name: '▶ Test factory' }).click();
   await expect(page.locator('.test-row.active')).toContainText('Test 1');
-  await expect(page.locator('.test-row.active')).toContainText('$99.80');
+  await expect(page.locator('.test-row.active')).toContainText('$49,900');
   await expect(page.locator('.hour-line')).toContainText('Hour 1');
   for (let i = 0; i < 11; i++) await page.getByRole('button', { name: 'Next hour' }).click();
   await expect(page.locator('.hour-line')).toContainText('Hour 12');
@@ -80,7 +80,7 @@ test('edit, test and play back a factory', async ({ page, problems }) => {
   await expect(met).toContainText([
     'Test the factory',
     'Step through at least 6 hours of a test',
-    'Earn $90',
+    'Earn $45,000',
   ]);
 
   // Back to editing from the test.
@@ -89,17 +89,67 @@ test('edit, test and play back a factory', async ({ page, problems }) => {
   expect(problems).toEqual([]);
 });
 
-test('compare with the optimizers', async ({ page, problems }) => {
+test('auto-build with the optimizers, inside the factory', async ({ page, problems }) => {
   await openLevelOne(page);
-  await page.getByRole('button', { name: '🤖 Compare' }).click();
-  await expect(page.locator('.bound')).toContainText('No factory can earn more than', {
+  await page.getByRole('button', { name: '🤖 Auto' }).click();
+  await expect(page.getByRole('tab', { name: /Auto/ })).toHaveAttribute('aria-selected', 'true');
+  await page.getByLabel('Time each').selectOption('1000');
+  await page.getByRole('checkbox', { name: /flow_lp/ }).uncheck();
+  await page.getByRole('button', { name: '🤖 Run optimizers' }).click();
+  await expect(page.locator('p.bound')).toContainText('No factory can earn more than', {
     timeout: 20_000,
   });
   const rows = page.locator('.test-row');
   await expect(rows.filter({ hasText: '🤖 local_search' })).toHaveCount(1);
   await expect(rows.filter({ hasText: '🤖 greedy' })).toHaveCount(1);
-  await expect(rows.filter({ hasText: '🤖 flow_lp' })).toHaveCount(1);
+  await expect(rows.filter({ hasText: '🤖 flow_lp' })).toHaveCount(0);
   await expect(page.locator('.test-row.active')).toContainText('🤖');
+  await expect(page.locator('.runs tbody tr')).toHaveCount(2);
+  await expect(page.locator('.comparison-chart g.bar')).toHaveCount(3);
+
+  // Edit from an optimizer's factory: it becomes the draft.
+  await page.locator('.runs').getByRole('button', { name: 'Edit from local_search' }).click();
+  await expect(page.getByRole('button', { name: 'Undo' })).toBeEnabled();
+  expect(problems).toEqual([]);
+});
+
+test('play helpers: hint, score, timeline and share link', async ({ page, problems }) => {
+  await openLevelOne(page);
+  await page.getByRole('tab', { name: /Play/ }).click();
+  await expect(page.getByText('Test your own factory to get a score.')).toBeVisible();
+
+  // The hint is a real improvement; doing it changes the draft (undoably).
+  await page.getByRole('button', { name: '💡 Get a hint' }).click();
+  await expect(page.locator('.card .gain')).toContainText('+$');
+  await page.getByRole('button', { name: 'Do it' }).click();
+  await expect(page.getByRole('button', { name: 'Undo' })).toBeEnabled();
+
+  await page.getByRole('button', { name: '▶ Test factory' }).click();
+  await expect(page.locator('.test-row.active')).toContainText('Test 1');
+  await expect(page.locator('.stars')).toHaveAttribute('aria-label', /of 3 stars/);
+  await expect(page.locator('.machine-timeline rect.cell').first()).toBeVisible();
+  await page.locator('.machine-timeline rect.cell').nth(9).click({ force: true });
+  await expect(page.locator('.hour-line')).toContainText('Hour 10');
+
+  // Faster playback.
+  await page.getByRole('button', { name: '4×' }).click();
+  await expect(page.getByRole('button', { name: '4×' })).toHaveAttribute('aria-pressed', 'true');
+
+  // A share link opens the level with the same draft, even in a fresh browser.
+  await page.getByRole('button', { name: 'Continue editing' }).click();
+  const link = await page.evaluate(() => {
+    const d = localStorage.getItem('pf.factory.draft.first-stitch')!;
+    const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(d)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+    return `/factory?level=first-stitch&design=${b64}`;
+  });
+  const sold = await page.locator('g.node.supplier .badge-main').allTextContents();
+  await page.evaluate(() => localStorage.clear());
+  await page.goto(link);
+  await expect(page.locator('.toast')).toContainText('Loaded a shared factory');
+  await expect(page.locator('g.node.supplier .badge-main')).toHaveText(sold);
   expect(problems).toEqual([]);
 });
 

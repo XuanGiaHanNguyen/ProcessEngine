@@ -279,6 +279,9 @@ class LocalSearchSolver final : public FactorySolver {
     const auto& choices = search.choices();
     std::int64_t moves = 0;
     std::int64_t accepted = 0;
+    // Start hot enough to accept losing about one top-priced sale, whatever the money scale.
+    Cents hottest = 100;
+    for (const Listing& l : level.listings) hottest = std::max(hottest, l.price);
 
     while (!search.expired() && !choices.empty()) {
       ++moves;
@@ -300,7 +303,7 @@ class LocalSearchSolver final : public FactorySolver {
       }
       const Cents p = search.evaluate(m, o);
       if (p == kInvalid) continue;
-      const double temperature = 3000.0 * (1.0 - elapsedFraction()) + 1.0;
+      const double temperature = static_cast<double>(hottest) * (1.0 - elapsedFraction()) + 1.0;
       const auto delta = static_cast<double>(p - cur_p);
       if (delta >= 0 || rng.unit() < std::exp(delta / temperature)) {
         ++accepted;

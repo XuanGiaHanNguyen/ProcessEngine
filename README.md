@@ -7,13 +7,14 @@ schedule that ends with the most valuable inventory.
 
 Eight solvers (two greedy variants, exhaustive, dynamic programming, branch and bound, beam search,
 simulated annealing, LP relaxation) run side by side, and every result is re-checked by an
-independent validator. In **Play mode** you schedule the factory yourself, tick by tick,
-then see how you rank against the algorithms.
+independent validator. They are available from the `pf_compare` CLI and the REST/WebSocket
+API.
 
-**Factory mode** is a design game: build a toy factory on a D3-drawn floor (suppliers of
-cotton, string, plastic, rubber and wood; looms, sewing stations, woodshops, assembly
+The web app is a **toy factory** design game: build a factory on a D3-drawn floor (suppliers
+of cotton, string, plastic, rubber and wood; looms, sewing stations, woodshops, assembly
 benches; conveyor belts), test it over a simulated 24-hour day, step through it hour by hour,
-and compare your design with three optimizers and a proven upper bound.
+let three optimizers build it for you (**Auto**), and get hints, a score and a share link
+(**Play**), all on one screen.
 
 ![Factory mode: build, test, step through the day, compare with the optimizers](docs/images/factory-mode.gif)
 
@@ -35,36 +36,34 @@ cd web && npm ci && npm start                         # UI on :4200, proxies /ap
 
 ## What you can do
 
-**Factory mode** (the landing page): two levels, Easy (one stuffed-animal line) and Hard
-(four toys from five raw materials). Click an empty slot to build a machine, a supplier to set
-its hourly order, a belt to change how a node splits its output; drag from one node to
-another to lay a belt. Every edit is checked by the server, with reasons ("s3 gets no
-Fabric"). **Test factory** runs the design through the engine's `FactorySim`, adds it to
-*Tested Factories*, and plays it back: machines show "1 of 2 hrs", "Blocked" or "Waiting",
-belts show what they carried each hour, and a money chart scrubs through the day.
-**Compare** runs the factory optimizers and adds their designs to the list. The rules are
-in [docs/factory-spec.md](docs/factory-spec.md).
+**Build**: two levels, Easy (one stuffed-animal line, best known $58,100) and Hard (four
+toys from five raw materials, best known $165,800). Click an empty slot to build a machine, a
+supplier to set its hourly order, a belt to change how a node splits its output; drag from
+one node to another to lay a belt. Hover or select a machine to light up just its belts.
+Every edit is checked by the server, with reasons ("s3 gets no Fabric"). **Test factory**
+runs the design through the engine's `FactorySim`, adds it to *Tested Factories*, and plays
+it back at 1×, 2× or 4×: machines show "1 of 2 hrs", "Blocked" or "Waiting", belts show what
+they carried each hour, and a money chart scrubs through the day. The rules are in
+[docs/factory-spec.md](docs/factory-spec.md).
 
 ![Factory mode: test playback](docs/images/factory-mode.png)
 
-**Auto mode**: load a sample, generate a random instance, or edit one; run any set of
-solvers with a time limit; watch them converge live over a WebSocket; compare earnings,
-optimality gaps, proofs and runtimes; inspect any schedule as a Gantt chart with inventory
-over time; see which processes it used on the process graph.
+**🤖 Auto** (a tab of the right panel): pick optimizers, a time limit and a seed, and run
+them on the level. Each optimizer's factory becomes a test to watch or edit, and a D3 bar
+chart compares every tested factory with the best known profit and the LP upper bound.
+Results export as JSON.
 
-![Auto mode](docs/images/auto-mode.png)
+![Auto tab: three optimizers compared with the best known profit and the bound](docs/images/factory-auto.png)
 
-**Play mode**: start processes by hand, wait or skip to the next event, undo/redo or scrub
-through history. Disabled Start buttons say why ("not enough Iron (need 2, have 0)").
-*Challenge* hides the solvers until you finish and press Reveal; *Assist* gives hints from
-an exact search of the rest of the game. Replay any solver's schedule step by step, export
-your run as JSON, or share a link.
+**💡 Play** (the next tab): **Get a hint** asks the server for the single change (an order,
+a belt, a split, a machine) that raises the draft's profit the most, with its exact gain, and
+**Do it** applies it. A score gives up to three stars against the best known factory; a D3
+timeline shows what every machine did in every hour of the test being played back; and the
+draft can be shared as a link or exported and imported as JSON.
+
+![Play tab: a hint worth $8,200, the score and the machine timeline](docs/images/factory-play.png)
 
 ## Solver comparison
-
-`factory` sample (5 processes, 3 workers, 12 ticks), 2 s limit:
-
-![Solver comparison](docs/images/comparison.png)
 
 Across generated instances (details and methodology in [docs/solvers.md](docs/solvers.md)):
 
@@ -86,8 +85,8 @@ Across generated instances (details and methodology in [docs/solvers.md](docs/so
 
 | Level | Initial design | `greedy` | `local_search` | `flow_lp` | Upper bound |
 |---|---|---|---|---|---|
-| Easy: First Stitch | $16.20 | $99.80 | $116.20 | $116.20 | $317.51 |
-| Hard: Full Line | $213.40 | $311.40 | $321.80 | $230.00 | $795.69 |
+| Easy: First Stitch | $8,100 | $49,900 | $58,100 | $58,100 | $158,755 |
+| Hard: Full Line | $106,700 | $155,700 | $160,900 | $115,000 | $397,845 |
 
 ## Benchmarks
 
@@ -109,11 +108,11 @@ Apple M-series, Release, one thread. Full table and the profile: [docs/solvers.m
 
 ```mermaid
 flowchart LR
-  UI["Angular UI<br/>Factory · Auto · Play"] -- "REST + WebSocket" --> S["Crow server<br/>jobs (thread pool) · sessions"]
-  S --> E["C++20 engine<br/>SimState rules · validator · GameSession · 8 solvers<br/>FactorySim · 3 factory solvers"]
+  UI["Angular UI<br/>toy factory: Build · Auto · Play"] -- "REST + WebSocket" --> S["Crow server<br/>jobs (thread pool) · sessions"]
+  S --> E["C++20 engine<br/>SimState rules · validator · GameSession · 8 solvers<br/>FactorySim · 3 factory solvers · hints"]
 ```
 
-The rules live in one class (`SimState`). The validator, Play-mode sessions, and the
+The scheduling rules live in one class (`SimState`). The validator, game sessions, and the
 timeline all run on it, and every solver's output is re-validated, so a solver cannot
 misreport its score and a hand-played game is scored exactly like an algorithm's. More in
 [docs/architecture.md](docs/architecture.md); the API contract is [docs/api.md](docs/api.md).
