@@ -1,7 +1,12 @@
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'auto' },
+  { path: '', pathMatch: 'full', redirectTo: 'factory' },
+  {
+    path: 'factory',
+    title: 'ProcessForge · Factory',
+    loadComponent: () => import('./factory/factory-page').then((m) => m.FactoryPage),
+  },
   {
     path: 'auto',
     title: 'ProcessForge · Auto mode',
@@ -12,5 +17,5 @@ export const routes: Routes = [
     title: 'ProcessForge · Play mode',
     loadComponent: () => import('./play/play-page').then((m) => m.PlayPage),
   },
-  { path: '**', redirectTo: 'auto' },
+  { path: '**', redirectTo: 'factory' },
 ];

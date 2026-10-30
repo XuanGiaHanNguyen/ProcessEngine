@@ -1,0 +1,160 @@
+app-factory-canvas {
+  position: relative;
+  display: block;
+  min-height: 0;
+
+  .floor {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #23262e;
+    cursor: grab;
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  .belt path {
+    fill: none;
+  }
+  .belt-edge {
+    stroke: #14161b;
+    stroke-width: 13;
+  }
+  .belt-track {
+    stroke: #e3bd3b;
+    stroke-width: 8;
+  }
+  .belt-dash {
+    stroke: #6b5513;
+    stroke-width: 3;
+    stroke-dasharray: 3 9;
+    animation: pf-belt 0.9s linear infinite;
+  }
+  .belt.idle {
+    .belt-track {
+      stroke: #6f6340;
+    }
+    .belt-dash {
+      animation: none;
+    }
+  }
+
+  .item {
+    stroke: #14161b;
+    stroke-width: 1.5;
+    pointer-events: none;
+  }
+
+  .node {
+    cursor: pointer;
+    outline: none;
+    .gear {
+      fill: none;
+      stroke: #3b4150;
+      stroke-width: 7;
+      stroke-dasharray: 5 4;
+    }
+    .disc {
+      fill: #2f3440;
+      stroke: #4a5163;
+      stroke-width: 2;
+    }
+    .icon {
+      text-anchor: middle;
+      font-size: 27px;
+      user-select: none;
+    }
+    .node-badge rect {
+      fill: #15171c;
+      stroke: #2c3039;
+    }
+    .node-badge text {
+      text-anchor: middle;
+      fill: #f3f4f7;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .node-badge .badge-sub {
+      font-weight: 500;
+      font-size: 11.5px;
+      fill: #c9cdd6;
+    }
+    &.active .gear {
+      stroke: #59627a;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: pf-spin 6s linear infinite;
+    }
+    &.machine .disc {
+      fill: #34405a;
+    }
+    &.market .disc {
+      fill: #3c2f5a;
+      stroke: #8d6be8;
+    }
+    &.slot {
+      .disc {
+        fill: transparent;
+        stroke: #555c6c;
+        stroke-dasharray: 6 5;
+      }
+      .gear {
+        display: none;
+      }
+      .icon {
+        fill: #7c8496;
+        font-size: 24px;
+      }
+    }
+    &:hover .disc,
+    &:focus-visible .disc {
+      stroke: #b9a4ff;
+      stroke-width: 3;
+    }
+    &.selected .disc {
+      stroke: #a77bff;
+      stroke-width: 4;
+    }
+  }
+
+  .zoom-controls {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    button {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid #3d4250;
+      background: #15171c;
+      color: #fff;
+      font-size: 17px;
+      cursor: pointer;
+      &:hover,
+      &:focus-visible {
+        background: #5b3fd6;
+      }
+    }
+  }
+}
+
+@keyframes pf-belt {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+@keyframes pf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  app-factory-canvas .belt-dash,
+  app-factory-canvas .node.active .gear {
+    animation: none;
+  }
+}
