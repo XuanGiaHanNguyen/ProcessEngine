@@ -3,7 +3,7 @@ import { FactoryLevel } from './factory-models';
 /** A small level for unit tests: cotton -> carder -> market, plus an empty slot. */
 export function tinyLevel(): FactoryLevel {
   return {
-    format: 'processforge-factory/1',
+    format: 'processengine-factory/1',
     id: 'tiny',
     name: 'Tiny',
     description: 'Card cotton into stuffing.',

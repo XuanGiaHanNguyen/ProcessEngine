@@ -17,12 +17,12 @@ inline nlohmann::json loadJson(const std::filesystem::path& path) {
   return nlohmann::json::parse(buffer.str());
 }
 
-/// Every Factory-mode level file (format "processforge-factory/1") under instances/, sorted.
+/// Every Factory-mode level file (format "processengine-factory/1") under instances/, sorted.
 inline std::vector<std::filesystem::path> factoryLevelFiles() {
   std::vector<std::filesystem::path> files;
   for (const auto& entry : std::filesystem::recursive_directory_iterator(PF_INSTANCES_DIR)) {
     if (entry.is_regular_file() && entry.path().extension() == ".json" &&
-        loadJson(entry.path()).value("format", "") == "processforge-factory/1") {
+        loadJson(entry.path()).value("format", "") == "processengine-factory/1") {
       files.push_back(entry.path());
     }
   }

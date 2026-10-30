@@ -1,5 +1,5 @@
 {
-  "format": "processforge-factory/1",
+  "format": "processengine-factory/1",
   "id": "full-line",
   "name": "Full Line",
   "description": "Four toys, one market. Find the mix that sells.",

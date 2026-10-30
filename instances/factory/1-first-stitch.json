@@ -1,5 +1,5 @@
 {
-  "format": "processforge-factory/1",
+  "format": "processengine-factory/1",
   "id": "first-stitch",
   "name": "First Stitch",
   "description": "Turn cotton and string into stuffed animals.",

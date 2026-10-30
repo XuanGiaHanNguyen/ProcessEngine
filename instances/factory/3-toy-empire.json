@@ -1,5 +1,5 @@
 {
-  "format": "processforge-factory/1",
+  "format": "processengine-factory/1",
   "id": "toy-empire",
   "name": "Toy Empire",
   "description": "Six ingredients, six toys, and motors made from scratch. Plan the whole chain.",

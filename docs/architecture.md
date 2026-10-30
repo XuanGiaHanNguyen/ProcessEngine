@@ -1,6 +1,6 @@
 # Architecture
 
-ProcessForge has three layers. Game rules live in exactly one place per game (the engine's
+ProcessEngine has three layers. Game rules live in exactly one place per game (the engine's
 `SimState` for scheduling, `FactorySim` for Factory mode); everything else calls into it.
 
 ```mermaid

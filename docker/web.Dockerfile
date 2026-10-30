@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# ProcessForge web UI: build the Angular app, serve it with nginx (which also proxies the API).
+# ProcessEngine web UI: build the Angular app, serve it with nginx (which also proxies the API).
 
 FROM node:24-alpine AS build
 WORKDIR /web

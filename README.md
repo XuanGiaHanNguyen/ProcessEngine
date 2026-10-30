@@ -1,4 +1,4 @@
-# ProcessForge
+# ProcessEngine
 
 **A production-process optimizer with a C++20 engine, a Crow HTTP/WebSocket server, and an
 Angular UI.** Given resources, recipes ("processes") that turn inputs into outputs over

@@ -147,8 +147,8 @@ pf::json::ParseResult<Level> parseLevel(const Json& j) {
               {"format", "id", "name", "description", "comment", "hours", "belt_capacity",
                "buffer_batches", "budget", "storage", "resources", "suppliers", "machine_types",
                "market", "slots", "objectives", "reference_designs"});
-  if (rd.str(j, "format", "level", true) != "processforge-factory/1") {
-    rd.fail("level.format", "must be \"processforge-factory/1\"");
+  if (rd.str(j, "format", "level", true) != "processengine-factory/1") {
+    rd.fail("level.format", "must be \"processengine-factory/1\"");
   }
   level.id = rd.str(j, "id", "level", true);
   level.name = rd.str(j, "name", "level", false, level.id);

@@ -1,4 +1,4 @@
-# ProcessForge HTTP API (v1)
+# ProcessEngine HTTP API (v1)
 
 This file is the single source of truth for the API used by the server (`server/`) and the
 Angular models (`web/src/app/api/`). Base URL: `http://localhost:8080`.

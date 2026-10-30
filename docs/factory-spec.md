@@ -160,11 +160,11 @@ inputs are ready but an output buffer is too full; otherwise `starved`, with the
 inputs), buffer contents, supplier stock, and units moved on each belt. The UI's playback,
 charts and objectives use only this report.
 
-## Level format (`processforge-factory/1`)
+## Level format (`processengine-factory/1`)
 
 ```json
 {
-  "format": "processforge-factory/1",
+  "format": "processengine-factory/1",
   "id": "first-stitch",
   "name": "First Stitch",
   "description": "...",

@@ -13,7 +13,7 @@
 /// JSON for Factory mode, in the formats of docs/factory-spec.md.
 namespace pf::factory::json {
 
-/// Parses and checks a level ("processforge-factory/1"). Layout hints (x, y), "objectives"
+/// Parses and checks a level ("processengine-factory/1"). Layout hints (x, y), "objectives"
 /// and "reference_designs" are metadata and are not part of the returned Level. The result,
 /// when present, satisfies checkLevel().
 [[nodiscard]] pf::json::ParseResult<Level> parseLevel(const nlohmann::json& j);

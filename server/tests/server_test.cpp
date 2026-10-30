@@ -95,7 +95,7 @@ TEST_F(ServerTest, FactoryLevels) {
   ASSERT_EQ(levels.size(), 3U);
   EXPECT_EQ(levels[0]["id"], "first-stitch");
   const Json level = get(port_, "/api/factory/levels/first-stitch").json();
-  EXPECT_EQ(level["format"], "processforge-factory/1");
+  EXPECT_EQ(level["format"], "processengine-factory/1");
   EXPECT_EQ(level["slots"].size(), 5U);
   EXPECT_EQ(get(port_, "/api/factory/levels/nope").status, 404);
   EXPECT_EQ(get(port_, "/api/factory/solvers").json().size(), 3U);

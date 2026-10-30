@@ -19,7 +19,7 @@ using Json = nlohmann::json;
 /// A one-machine level: supplier "a" -> machine "m" (1 a -> 1 b, `hours`) -> market.
 Json tinyLevel(int hours = 6) {
   Json j = Json::parse(R"({
-    "format": "processforge-factory/1", "id": "tiny", "hours": 6, "belt_capacity": 10,
+    "format": "processengine-factory/1", "id": "tiny", "hours": 6, "belt_capacity": 10,
     "buffer_batches": 2,
     "resources": [{"id": "a", "kind": "raw"}, {"id": "b", "kind": "product"},
                   {"id": "c", "kind": "part"}],
