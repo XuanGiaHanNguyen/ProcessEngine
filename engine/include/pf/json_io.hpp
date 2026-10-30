@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pf/game_session.hpp"
+#include "pf/generator.hpp"
 #include "pf/model.hpp"
 #include "pf/solver.hpp"
 #include "pf/validator.hpp"
@@ -62,5 +63,10 @@ struct ParseResult {
 /// Rebuilds a session by replaying its history (and redo list) through the rules, so a
 /// tampered document cannot produce an illegal state.
 [[nodiscard]] ParseResult<GameSession> parseSession(const nlohmann::json& j);
+
+/// Parses generator parameters. An optional "size" ("small", "medium", "large") selects a
+/// preset; any other field (seed, resources, processes, chain_depth, workers, horizon,
+/// min_price, max_price, max_qty, max_duration) overrides it.
+[[nodiscard]] ParseResult<GeneratorParams> parseGeneratorParams(const nlohmann::json& j);
 
 }  // namespace pf::json

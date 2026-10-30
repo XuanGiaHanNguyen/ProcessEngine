@@ -29,3 +29,4 @@ if(PF_BUILD_TESTS)
 endif()
 
 add_subdirectory(engine)
+add_subdirectory(tools)
