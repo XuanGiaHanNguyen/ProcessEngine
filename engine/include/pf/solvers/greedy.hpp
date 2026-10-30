@@ -1,7 +1,9 @@
 #pragma once
 
+#include "pf/rules.hpp"
 #include "pf/solver.hpp"
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -53,5 +55,11 @@ class PotentialValues {
   Tick max_tau_;
   std::vector<double> table_;  // (tau, resource) -> value, row-major by tau
 };
+
+/// The process greedy would start next from `state`: the legal process with the highest
+/// strictly positive score (ties to the lower index), or nullopt if none is worth starting.
+/// `potential` must be non-null for GreedyScore::PotentialValuePerTick.
+[[nodiscard]] std::optional<ProcessIndex> greedyChoice(const SimState& state, GreedyScore score,
+                                                       const PotentialValues* potential);
 
 }  // namespace pf

@@ -29,6 +29,7 @@ Checks: >
   -misc-use-anonymous-namespace,
   -readability-math-missing-parentheses,
   -bugprone-random-generator-seed,
+  -performance-inefficient-string-concatenation,
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*/(engine|server)/.*'
 FormatStyle: file

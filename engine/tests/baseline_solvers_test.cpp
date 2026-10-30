@@ -244,33 +244,10 @@ INSTANTIATE_TEST_SUITE_P(All, BaselineOnHandMade, ::testing::ValuesIn(test::inst
 
 // --- Tiny random instances ---------------------------------------------------------------
 
-// A deliberately simple tiny-instance maker; milestone 3 replaces it with the real generator.
-Instance tinyRandom(std::mt19937_64& rng) {
-  auto pick = [&](int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(rng); };
-  test::InstanceBuilder b;
-  const int resources = pick(2, 4);
-  for (int r = 0; r < resources; ++r) {
-    b.resource("r" + std::to_string(r), pick(0, 6), pick(0, 4));
-  }
-  const int processes = pick(1, 4);
-  for (int p = 0; p < processes; ++p) {
-    const int in = pick(0, resources - 1);
-    int out = pick(0, resources - 1);
-    if (out == in) out = (out + 1) % resources;
-    std::vector<std::pair<std::string, Quantity>> inputs;
-    if (pick(0, 4) != 0) inputs.emplace_back("r" + std::to_string(in), pick(1, 3));
-    std::optional<std::int32_t> max_runs;
-    if (pick(0, 3) == 0) max_runs = pick(0, 3);
-    b.process("p" + std::to_string(p), inputs, {{"r" + std::to_string(out), pick(1, 3)}},
-              pick(1, 3), max_runs);
-  }
-  return b.workers(pick(1, 2)).horizon(pick(1, 6)).build();
-}
-
 TEST(BaselineOnTinyRandom, BruteForceDominatesGreedy) {
   std::mt19937_64 rng(12345);
   for (int i = 0; i < 300; ++i) {
-    const Instance inst = tinyRandom(rng);
+    const Instance inst = test::tinyRandom(rng);
     ASSERT_TRUE(checkInstance(inst).empty());
     const Solution bf = run("brute_force", inst);
     ASSERT_TRUE(bf.valid) << "instance " << i << ": " << bf.error.value_or("");
@@ -286,7 +263,7 @@ TEST(BaselineOnTinyRandom, BruteForceDominatesGreedy) {
 TEST(BaselineOnTinyRandom, Deterministic) {
   std::mt19937_64 rng(7);
   for (int i = 0; i < 50; ++i) {
-    const Instance inst = tinyRandom(rng);
+    const Instance inst = test::tinyRandom(rng);
     for (const char* name : {"greedy", "greedy_potential", "brute_force"}) {
       EXPECT_EQ(run(name, inst).runs, run(name, inst).runs) << name;
     }

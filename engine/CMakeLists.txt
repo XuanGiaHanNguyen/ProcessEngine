@@ -1,5 +1,6 @@
 # Core engine: pure C++, no web or I/O code, no third-party dependencies.
 add_library(pf_engine
+  src/game_session.cpp
   src/model.cpp
   src/registry.cpp
   src/rules.cpp

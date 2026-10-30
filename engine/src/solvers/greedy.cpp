@@ -45,44 +45,47 @@ std::string GreedySolver::name() const {
   return score_ == GreedyScore::MarketValuePerTick ? "greedy" : "greedy_potential";
 }
 
-RawSolution GreedySolver::solveRaw(const Instance& instance, const SolveOptions& /*options*/,
-                                   const Deadline& deadline, ProgressReporter& progress) {
-  std::optional<PotentialValues> potential;
-  if (score_ == GreedyScore::PotentialValuePerTick) potential.emplace(instance);
-
-  // Score of starting `p` at `tick`; only positive scores are worth a worker slot.
-  const auto score = [&](const Process& p, Tick tick) {
+std::optional<ProcessIndex> greedyChoice(const SimState& state, GreedyScore score,
+                                         const PotentialValues* potential) {
+  const Instance& instance = state.instance();
+  const bool use_potential = score == GreedyScore::PotentialValuePerTick;
+  std::optional<ProcessIndex> best;
+  double best_score = 0;
+  for (ProcessIndex index = 0; index < instance.processes.size(); ++index) {
+    if (state.checkStart(index)) continue;
+    const Process& p = instance.processes[index];
     double out_value = 0;
     for (const ResourceAmount& o : p.outputs) {
-      const double unit = potential
-                              ? potential->value(o.resource, instance.horizon - tick - p.duration)
-                              : static_cast<double>(instance.resources[o.resource].sell_price);
+      const double unit =
+          use_potential ? potential->value(o.resource, instance.horizon - state.tick() - p.duration)
+                        : static_cast<double>(instance.resources[o.resource].sell_price);
       out_value += static_cast<double>(o.qty) * unit;
     }
     double in_value = 0;
     for (const ResourceAmount& i : p.inputs) {
       in_value += static_cast<double>(i.qty * instance.resources[i.resource].sell_price);
     }
-    return (out_value - in_value) / static_cast<double>(p.duration);
-  };
+    const double s = (out_value - in_value) / static_cast<double>(p.duration);
+    if (s > best_score) {  // strict: ties go to the lower process index
+      best_score = s;
+      best = index;
+    }
+  }
+  return best;
+}
+
+RawSolution GreedySolver::solveRaw(const Instance& instance, const SolveOptions& /*options*/,
+                                   const Deadline& deadline, ProgressReporter& progress) {
+  std::optional<PotentialValues> potential;
+  if (score_ == GreedyScore::PotentialValuePerTick) potential.emplace(instance);
+  const PotentialValues* table = potential ? &*potential : nullptr;
 
   RawSolution result;
   SimState sim(instance);
   while (!deadline.expired()) {
-    while (true) {
-      std::optional<ProcessIndex> best;
-      double best_score = 0;
-      for (ProcessIndex p = 0; p < instance.processes.size(); ++p) {
-        if (sim.checkStart(p)) continue;
-        const double s = score(instance.processes[p], sim.tick());
-        if (s > best_score) {  // strict: ties go to the lower process index
-          best_score = s;
-          best = p;
-        }
-      }
-      if (!best) break;
-      sim.start(*best);
-      result.runs.push_back({*best, sim.tick()});
+    while (const auto choice = greedyChoice(sim, score_, table)) {
+      sim.start(*choice);
+      result.runs.push_back({*choice, sim.tick()});
     }
     const auto next = sim.nextEventTick();
     if (!next) break;

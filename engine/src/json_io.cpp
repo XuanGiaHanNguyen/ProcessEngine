@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <ranges>
 
 namespace pf::json {
 
@@ -362,6 +363,156 @@ json toJson(const ValidationReport& report, const Instance& instance) {
     out["violation"] = nullptr;
   }
   return out;
+}
+
+json toJson(const Solution& solution, const Instance& instance) {
+  json out = {{"runs", scheduleToJson(solution.runs, instance)},
+              {"earnings", solution.earnings},
+              {"proven_optimal", solution.proven_optimal},
+              {"runtime_ms", solution.runtime_ms},
+              {"solver_name", solution.solver_name},
+              {"stats", solution.stats},
+              {"valid", solution.valid}};
+  out["error"] = solution.error ? json(*solution.error) : json(nullptr);
+  return out;
+}
+
+json toJson(const Action& action, const Instance& instance) {
+  json out = {{"type", toString(action.type)}};
+  if (action.type == Action::Type::StartRun) {
+    out["process_id"] = action.process < instance.processes.size()
+                            ? json(instance.processes[action.process].id)
+                            : json(nullptr);
+  }
+  if (action.type == Action::Type::AdvanceTo) out["tick"] = action.tick;
+  return out;
+}
+
+ParseResult<Action> parseAction(const json& j, const Instance& instance) {
+  Reader r;
+  ParseResult<Action> result;
+  if (!r.object(j, "", {"type", "process_id", "processId", "tick"})) {
+    result.errors = std::move(r.errors());
+    return result;
+  }
+  const std::optional<std::string> type =
+      j.contains("type") ? r.string(j["type"], "type") : std::nullopt;
+  if (!j.contains("type")) r.error("", "missing required field 'type'");
+  Action action;
+  if (type == "start_run") {
+    // Accept both snake_case (engine) and camelCase (API body) spellings.
+    const char* key = j.contains("process_id") ? "process_id" : "processId";
+    if (!j.contains(key)) {
+      r.error("", "start_run requires 'process_id'");
+    } else if (auto id = r.string(j[key], key)) {
+      if (auto p = instance.findProcess(*id)) {
+        action = Action::startRun(*p);
+      } else {
+        r.error(key, "unknown process '" + *id + "'");
+      }
+    }
+  } else if (type == "wait") {
+    action = Action::wait();
+  } else if (type == "advance_to") {
+    if (!j.contains("tick")) {
+      r.error("", "advance_to requires 'tick'");
+    } else if (auto t = r.integer<Tick>(j["tick"], "tick", 0, kInt32Max)) {
+      action = Action::advanceTo(*t);
+    }
+  } else if (type == "finish") {
+    action = Action::finish();
+  } else if (type) {
+    r.error("type",
+            "unknown action type '" + *type + "' (expected start_run, wait, advance_to or finish)");
+  }
+  result.errors = std::move(r.errors());
+  if (result.errors.empty()) result.value = action;
+  return result;
+}
+
+json toJson(const SessionState& state, const Instance& instance) {
+  json inventory = json::object();
+  for (std::size_t i = 0; i < state.inventory.size(); ++i) {
+    inventory[instance.resources[i].id] = state.inventory[i];
+  }
+  json runs = json::array();
+  for (const RunInProgress& run : state.runs_in_progress) {
+    runs.push_back({{"process_id", instance.processes[run.process].id},
+                    {"start", run.start},
+                    {"end", run.end},
+                    {"remaining", run.remaining}});
+  }
+  json counts = json::object();
+  for (std::size_t p = 0; p < state.run_counts.size(); ++p) {
+    counts[instance.processes[p].id] = state.run_counts[p];
+  }
+  json history = json::array();
+  for (const Action& a : state.history) history.push_back(toJson(a, instance));
+  return {{"tick", state.tick},
+          {"horizon", state.horizon},
+          {"inventory", std::move(inventory)},
+          {"money", state.money},
+          {"projected_earnings", state.projected_earnings},
+          {"runs_in_progress", std::move(runs)},
+          {"free_workers", state.free_workers},
+          {"workers", instance.workers},
+          {"run_counts", std::move(counts)},
+          {"history", std::move(history)},
+          {"redo_available", state.redo_available},
+          {"finished", state.finished}};
+}
+
+json sessionToJson(const GameSession& session) {
+  const Instance& instance = session.instance();
+  json history = json::array();
+  for (const Action& a : session.history()) history.push_back(toJson(a, instance));
+  json redo = json::array();  // next action to redo first
+  for (const Action& a : std::views::reverse(session.redoStack())) {
+    redo.push_back(toJson(a, instance));
+  }
+  return {
+      {"instance", toJson(instance)}, {"history", std::move(history)}, {"redo", std::move(redo)}};
+}
+
+ParseResult<GameSession> parseSession(const json& j) {
+  ParseResult<GameSession> result;
+  if (!j.is_object() || !j.contains("instance")) {
+    result.errors.emplace_back("expected an object with an 'instance' field");
+    return result;
+  }
+  auto instance = parseInstance(j["instance"]);
+  if (!instance.value) {
+    for (const std::string& e : instance.errors) result.errors.push_back("instance: " + e);
+    return result;
+  }
+  GameSession session(std::move(*instance.value));
+
+  // Replay history, then the redo list, then undo the redo part to restore it.
+  std::size_t redo_count = 0;
+  for (const char* field : {"history", "redo"}) {
+    if (!j.contains(field)) continue;
+    const json& actions = j[field];
+    if (!actions.is_array()) {
+      result.errors.push_back(std::string(field) + ": expected an array");
+      return result;
+    }
+    for (std::size_t i = 0; i < actions.size(); ++i) {
+      const std::string path = std::string(field) + "[" + std::to_string(i) + "]";
+      auto action = parseAction(actions[i], session.instance());
+      if (!action.value) {
+        for (const std::string& e : action.errors) result.errors.push_back(path + ": " + e);
+        return result;
+      }
+      if (auto error = session.apply(*action.value)) {
+        result.errors.push_back(path + ": illegal action: " + error->message);
+        return result;
+      }
+    }
+    if (std::string_view(field) == "redo") redo_count = actions.size();
+  }
+  for (std::size_t i = 0; i < redo_count; ++i) (void)session.undo();
+  result.value = std::move(session);
+  return result;
 }
 
 }  // namespace pf::json
