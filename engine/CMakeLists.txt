@@ -1,6 +1,8 @@
 # Core engine: pure C++, no web or I/O code, no third-party dependencies.
 add_library(pf_engine
   src/bounds.cpp
+  src/factory/level.cpp
+  src/factory/sim.cpp
   src/game_session.cpp
   src/generator.cpp
   src/model.cpp
@@ -23,6 +25,7 @@ pf_set_warnings(pf_engine)
 
 # JSON (de)serialization of engine types. Kept separate so pf_engine stays dependency-free.
 add_library(pf_json
+  src/factory/json.cpp
   src/json_io.cpp)
 target_link_libraries(pf_json PUBLIC pf_engine nlohmann_json::nlohmann_json)
 pf_set_warnings(pf_json)
