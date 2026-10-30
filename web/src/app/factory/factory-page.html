@@ -5,9 +5,10 @@
   <app-factory-canvas
     class="canvas"
     [level]="store.level()"
-    [design]="store.draft()"
+    [design]="shownDesign()"
     [selection]="asCanvasSelection()"
-    [editable]="true"
+    [editable]="!store.viewedTest()"
+    [report]="store.currentHour()"
     [insets]="[324, 314]"
     (nodeSelected)="selectNode($event)"
     (beltSelected)="selectBelt($event)"
@@ -21,7 +22,7 @@
     </div>
   }
 
-  <aside class="left" aria-label="Goal and draft">
+  <aside class="left" aria-label="Goal, tests and draft">
     <section class="panel goal">
       <div class="level-nav">
         <button
@@ -32,9 +33,9 @@
         >
           ‹
         </button>
-        <span class="level-label"
-          >Level {{ store.levelIndex() + 1 }} of {{ store.levels().length }}</span
-        >
+        <span class="level-label">
+          Level {{ store.levelIndex() + 1 }} of {{ store.levels().length }}
+        </span>
         <button
           type="button"
           (click)="step(1)"
@@ -48,8 +49,7 @@
       <p class="eyebrow">Goal</p>
       <p>
         Edit the factory to earn as much money as possible over
-        {{ store.level()?.hours ?? 24 }} hours.
-        {{ store.level()?.description }}
+        {{ store.level()?.hours ?? 24 }} hours. {{ store.level()?.description }}
       </p>
       @if (target(); as t) {
         <p class="target">
@@ -59,68 +59,178 @@
       }
     </section>
 
+    <section class="panel tests" aria-label="Tested factories">
+      <h3>Tested Factories</h3>
+      <ul>
+        @for (t of store.tests(); track t.id) {
+          <li>
+            <button
+              type="button"
+              class="test-row"
+              [class.active]="store.viewing() === t.id"
+              [attr.aria-pressed]="store.viewing() === t.id"
+              (click)="store.view(t.id)"
+            >
+              <span>{{ t.kind === 'solver' ? '🤖 ' : '' }}{{ t.name }}</span>
+              <span class="amount" [class.neg]="t.result.profit < 0">{{
+                money(t.result.profit)
+              }}</span>
+            </button>
+            @if (store.viewing() === t.id) {
+              <div class="playback">
+                <div class="hour-line">
+                  <span>Hour {{ store.hour() + 1 }}</span>
+                  <strong [class.neg]="(store.currentHour()?.profit ?? 0) < 0">
+                    {{ money(store.currentHour()?.profit ?? 0) }}
+                  </strong>
+                </div>
+                <app-money-chart
+                  [hours]="t.result.hours"
+                  [hour]="store.hour()"
+                  (seek)="store.seek($event)"
+                />
+                <p class="sold-line">
+                  @for (s of soldSoFar(); track s.id) {
+                    <span>{{ s.icon }} {{ s.qty }}</span>
+                  } @empty {
+                    <span>Nothing sold yet</span>
+                  }
+                </p>
+                <div class="transport">
+                  <button type="button" (click)="store.stepBy(-999)" aria-label="First hour">
+                    ⏮ First
+                  </button>
+                  <button type="button" (click)="store.stepBy(-1)" aria-label="Previous hour">
+                    ◀
+                  </button>
+                  <button type="button" class="play" (click)="store.togglePlay()">
+                    {{ store.playing() ? '⏸ Pause' : '▶ Play' }}
+                  </button>
+                  <button type="button" (click)="store.stepBy(1)" aria-label="Next hour">▶|</button>
+                </div>
+                <button type="button" class="wide" (click)="store.editFrom(t.id)">
+                  Edit from {{ t.name }}
+                </button>
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+
     <section class="panel draft" aria-label="Draft">
       <div class="draft-head">
         <h3>Draft</h3>
-        <div class="tools">
-          <button
-            type="button"
-            (click)="store.undo()"
-            [disabled]="!store.canUndo()"
-            aria-label="Undo"
-          >
-            ↶
-          </button>
-          <button
-            type="button"
-            (click)="store.redo()"
-            [disabled]="!store.canRedo()"
-            aria-label="Redo"
-          >
-            ↷
-          </button>
-          <button type="button" (click)="resetDraft()" aria-label="Reset to the initial factory">
-            ⟲
-          </button>
-        </div>
-      </div>
-      <p class="build">
-        Build cost <strong>{{ money(store.buildCost()) }}</strong>
-        @if (budgetLeft() !== null) {
-          · budget {{ money(store.level()?.budget ?? 0) }}
-        }
-      </p>
-      @if (store.check(); as check) {
-        @if (check.valid) {
-          <p class="status ok">✓ Ready to test</p>
+        @if (store.viewedTest()) {
+          <button type="button" class="link" (click)="store.backToDraft()">Continue editing</button>
         } @else {
-          <p class="status bad">
-            ✗ Fix {{ check.errors.length }} problem{{ check.errors.length > 1 ? 's' : '' }}
-          </p>
-          <ul class="issues bad">
-            @for (e of check.errors; track $index) {
-              <li>{{ e.message }}</li>
-            }
-          </ul>
+          <div class="tools">
+            <button
+              type="button"
+              (click)="store.undo()"
+              [disabled]="!store.canUndo()"
+              aria-label="Undo"
+            >
+              ↶
+            </button>
+            <button
+              type="button"
+              (click)="store.redo()"
+              [disabled]="!store.canRedo()"
+              aria-label="Redo"
+            >
+              ↷
+            </button>
+            <button type="button" (click)="resetDraft()" aria-label="Reset to the initial factory">
+              ⟲
+            </button>
+          </div>
         }
-        @if (check.warnings.length) {
-          <ul class="issues warn">
-            @for (w of check.warnings; track $index) {
-              <li>{{ w.message }}</li>
-            }
-          </ul>
+      </div>
+      @if (!store.viewedTest()) {
+        <p class="build">
+          Build cost <strong>{{ money(store.buildCost()) }}</strong>
+          @if (budgetLeft() !== null) {
+            · budget {{ money(store.level()?.budget ?? 0) }}
+          }
+        </p>
+        @if (store.check(); as check) {
+          @if (!check.valid) {
+            <p class="status bad">
+              ✗ Fix {{ check.errors.length }} problem{{ check.errors.length > 1 ? 's' : '' }}
+            </p>
+            <ul class="issues bad">
+              @for (e of check.errors; track $index) {
+                <li>{{ e.message }}</li>
+              }
+            </ul>
+          }
+          @if (check.warnings.length) {
+            <ul class="issues warn">
+              @for (w of check.warnings; track $index) {
+                <li>{{ w.message }}</li>
+              }
+            </ul>
+          }
         }
       }
+      <button
+        type="button"
+        class="primary"
+        (click)="store.runTest()"
+        [disabled]="!store.check()?.valid || store.testing()"
+      >
+        {{ store.testing() ? 'Testing…' : '▶ Test factory' }}
+      </button>
     </section>
   </aside>
 
   <aside class="right panel purple" aria-label="Inspector">
-    <app-factory-inspector>
-      <ul class="objectives" objectives>
-        @for (o of store.level()?.objectives ?? []; track o.text) {
-          <li><span class="check" aria-hidden="true"></span>{{ o.text }}</li>
+    @if (store.viewedTest(); as t) {
+      <section aria-label="Test details">
+        @if (inspectedHour(); as m) {
+          <h3>{{ m.title }}</h3>
+          <p class="hour-status {{ m.status }}">{{ m.statusText }}</p>
+          <dl>
+            @for (b of m.buffers; track b.label) {
+              <dt>{{ b.label }}</dt>
+              <dd>{{ b.value }}</dd>
+            }
+          </dl>
+        } @else {
+          <h3>{{ t.name }} · Hour {{ store.hour() + 1 }}</h3>
+          <dl class="totals">
+            <dt>Sales</dt>
+            <dd>{{ money(t.result.sales) }}</dd>
+            <dt>Purchases</dt>
+            <dd>−{{ money(t.result.purchases) }}</dd>
+            <dt>Build</dt>
+            <dd>−{{ money(t.result.build) }}</dd>
+            <dt>Profit</dt>
+            <dd>{{ money(t.result.profit) }}</dd>
+          </dl>
+          <p class="hint">Click a machine to see what it is doing this hour.</p>
         }
-      </ul>
-    </app-factory-inspector>
+      </section>
+      <h3 class="objectives-title">Objectives</h3>
+      <ng-container *ngTemplateOutlet="objectiveList" />
+    } @else {
+      <app-factory-inspector>
+        <div objectives><ng-container *ngTemplateOutlet="objectiveList" /></div>
+      </app-factory-inspector>
+    }
   </aside>
 </div>
+
+<ng-template #objectiveList>
+  <ul class="objectives">
+    @for (o of store.objectives(); track o.text) {
+      <li [class.met]="o.met">
+        <span class="check" aria-hidden="true">{{ o.met ? '✓' : '' }}</span>
+        <span
+          >{{ o.text }}<span class="visually-hidden">{{ o.met ? ' (done)' : '' }}</span></span
+        >
+      </li>
+    }
+  </ul>
+</ng-template>

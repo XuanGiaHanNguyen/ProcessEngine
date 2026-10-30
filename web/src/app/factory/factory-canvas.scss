@@ -120,6 +120,18 @@ app-factory-canvas {
     &.machine .disc {
       fill: #34405a;
     }
+    &.busy .gear {
+      stroke: #3fae6a;
+    }
+    &.blocked .gear {
+      stroke: #d9534f;
+    }
+    &.blocked .disc {
+      stroke: #ff8a80;
+    }
+    &.starved .gear {
+      stroke: #a8892f;
+    }
     &.market .disc {
       fill: #3c2f5a;
       stroke: #8d6be8;
