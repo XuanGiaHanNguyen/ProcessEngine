@@ -81,8 +81,14 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  // When the panels are taller than the window, the column scrolls; no panel is squeezed.
+  // The bottom padding keeps the last panel's shadow from being clipped.
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-bottom: 6px;
   pointer-events: none;
   > * {
+    flex: none;
     pointer-events: auto;
   }
 }
@@ -233,7 +239,6 @@ p {
 }
 
 .tests {
-  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
