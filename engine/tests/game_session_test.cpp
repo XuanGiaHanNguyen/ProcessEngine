@@ -187,15 +187,49 @@ TEST(GameSession, RestartClearsEverything) {
   EXPECT_EQ(session.state(), GameSession(workshop()).state());
 }
 
-TEST(GameSession, HintIsLegal) {
-  GameSession session(workshop());
-  for (int i = 0; i < 20 && !session.finished(); ++i) {
-    const auto hint = session.hint();
-    ASSERT_TRUE(hint.has_value());
-    ASSERT_FALSE(session.apply(*hint)) << "hint was illegal";
+TEST(GameSession, HintsAreLegalForEverySolver) {
+  for (const char* solver : {"branch_and_bound", "greedy", "greedy_potential"}) {
+    GameSession session(workshop());
+    for (int i = 0; i < 30 && !session.finished(); ++i) {
+      const auto hint = session.hint(solver);
+      ASSERT_TRUE(hint.has_value());
+      EXPECT_EQ(hint->solver, solver);
+      ASSERT_FALSE(session.apply(hint->action)) << solver << ": hint was illegal";
+    }
+    EXPECT_TRUE(session.finished()) << solver;
   }
-  EXPECT_TRUE(session.finished());
-  EXPECT_GT(session.finish().earnings, GameSession(workshop()).state().projected_earnings);
+  EXPECT_FALSE(GameSession(workshop()).hint("nope").has_value());
+}
+
+TEST(GameSession, FollowingExactHintsReachesTheOptimum) {
+  for (const auto& file : test::instanceFiles()) {
+    const Instance inst = *json::parseInstance(test::loadJson(file)).value;
+    const Solution best =
+        SolverRegistry::builtin().create("branch_and_bound")->solve(inst, {}, nullptr);
+    ASSERT_TRUE(best.proven_optimal) << file.stem();
+    GameSession session(inst);
+    const auto first = session.hint("branch_and_bound", 5000);
+    ASSERT_TRUE(first.has_value());
+    EXPECT_TRUE(first->optimal);
+    EXPECT_EQ(first->projected_earnings, best.earnings) << file.stem();
+    while (!session.finished()) {
+      const auto h = session.hint("branch_and_bound", 5000);
+      ASSERT_TRUE(h.has_value());
+      ASSERT_FALSE(session.apply(h->action));
+    }
+    EXPECT_EQ(session.finish().earnings, best.earnings) << file.stem();
+  }
+}
+
+TEST(GameSession, HintFromMidGameAccountsForRunsInProgress) {
+  GameSession session(workshop());
+  ASSERT_FALSE(session.apply(Action::startRun(kKiln)));
+  ASSERT_FALSE(session.apply(Action::wait()));  // a non-event tick: no run completes at 1
+  ASSERT_FALSE(session.apply(Action::startRun(kSaw)));
+  const auto h = session.hint();
+  ASSERT_TRUE(h.has_value());
+  EXPECT_TRUE(h->optimal);
+  EXPECT_GE(h->projected_earnings, session.state().projected_earnings);
 }
 
 TEST(GameSession, CopiesAreIndependent) {

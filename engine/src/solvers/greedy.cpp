@@ -74,27 +74,34 @@ std::optional<ProcessIndex> greedyChoice(const SimState& state, GreedyScore scor
   return best;
 }
 
+Rollout greedyRollout(SimState state, GreedyScore score, const PotentialValues* potential) {
+  Rollout out;
+  while (true) {
+    while (const auto choice = greedyChoice(state, score, potential)) {
+      out.runs.push_back({*choice, state.tick()});
+      state.start(*choice);
+    }
+    const auto next = state.nextEventTick();
+    if (!next) break;
+    state.advanceTo(*next);
+  }
+  state.advanceTo(state.instance().horizon);
+  out.earnings = state.inventoryValue();
+  return out;
+}
+
 RawSolution GreedySolver::solveRaw(const Instance& instance, const SolveOptions& /*options*/,
-                                   const Deadline& deadline, ProgressReporter& progress) {
+                                   const Deadline& /*deadline*/, ProgressReporter& progress) {
+  // Greedy makes at most one pass over the event ticks, so it ignores the time limit.
   std::optional<PotentialValues> potential;
   if (score_ == GreedyScore::PotentialValuePerTick) potential.emplace(instance);
-  const PotentialValues* table = potential ? &*potential : nullptr;
+  Rollout rollout = greedyRollout(SimState(instance), score_, potential ? &*potential : nullptr);
 
   RawSolution result;
-  SimState sim(instance);
-  while (!deadline.expired()) {
-    while (const auto choice = greedyChoice(sim, score_, table)) {
-      sim.start(*choice);
-      result.runs.push_back({*choice, sim.tick()});
-    }
-    const auto next = sim.nextEventTick();
-    if (!next) break;
-    sim.advanceTo(*next);
-  }
-  sim.advanceTo(instance.horizon);
+  result.runs = std::move(rollout.runs);
   const auto runs = static_cast<std::int64_t>(result.runs.size());
   result.stats["runs_started"] = runs;
-  progress.improved(sim.inventoryValue(), runs);
+  progress.improved(rollout.earnings, runs);
   return result;
 }
 

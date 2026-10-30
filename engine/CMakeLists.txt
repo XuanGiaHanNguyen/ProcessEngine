@@ -1,12 +1,15 @@
 # Core engine: pure C++, no web or I/O code, no third-party dependencies.
 add_library(pf_engine
+  src/bounds.cpp
   src/game_session.cpp
   src/generator.cpp
   src/model.cpp
   src/registry.cpp
   src/rules.cpp
   src/solver.cpp
+  src/solvers/branch_and_bound.cpp
   src/solvers/brute_force.cpp
+  src/solvers/dp.cpp
   src/solvers/greedy.cpp
   src/validator.cpp
   src/version.cpp)

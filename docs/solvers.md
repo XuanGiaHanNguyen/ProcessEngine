@@ -12,6 +12,8 @@ Solvers are listed and constructed by name through `SolverRegistry::builtin()`.
 | `greedy` | no | 2 | best market-value gain per tick |
 | `greedy_potential` | no | 2 | best time-aware potential gain per tick |
 | `brute_force` | yes (tiny only) | 2 | exhaustive search, ground truth for tests |
+| `dp` | yes | 4 | memoized DP over event states |
+| `branch_and_bound` | yes (anytime) | 4 | DFS + dual upper bound + greedy incumbent |
 
 Notation: `P` processes, `R` resources, `W` workers, horizon `T`, `E` = number of event
 ticks visited (tick 0 plus every tick at which a run completes; `E <= T + 1`).
@@ -88,16 +90,114 @@ limit runs out it returns the best schedule found with `proven_optimal = false`.
 
 ---
 
-## Brute force does not assume "decide only at events"
+## Deciding only at events (exchange argument)
 
-An exchange argument suggests that some optimal schedule starts every run at tick 0 or at
-a completion tick (shifting the earliest off-event start back to the previous event never
-breaks inventory or worker limits, since neither changes between events). Faster exact
-solvers may rely on that. Brute force deliberately does not: it also tries every in-between
-tick, so if the argument were wrong the "exact solver == brute force" tests would catch it.
-Declining to start a legal run now (to keep its inputs or worker for a later, better run)
-is of course explored by every exact solver; the greedy solvers never do it, which is one
-reason they are heuristics.
+**Claim.** Some optimal schedule starts every run at tick 0 or at a tick where some run
+completes ("event ticks").
+
+**Proof sketch.** Take an optimal schedule and let `r` be the earliest run whose start `s`
+is not an event tick; let `e < s` be the latest event tick before it. No run completes in
+`(e, s]` and, since `r` is the earliest off-event start, no run starts in `(e, s)`. So the
+inventory and the number of busy workers are the same at every tick of `[e, s)` as just
+after the starts at `e`, and `r` was legal at `s`; hence it is legal at `e`. Moving `r` to
+`e` only makes its outputs and its worker available earlier, which never invalidates a
+later run, and leaves the final inventory (and so the earnings) unchanged. Each move
+strictly decreases the sum of start ticks, so repeating it terminates with every start at
+an event tick.
+
+`dp` and `branch_and_bound` rely on this; `brute_force` deliberately does not (it also tries
+every in-between tick). The property tests check `dp == branch_and_bound == brute_force`
+on 1000 generated instances, so a flaw in the argument would show up there.
+
+---
+
+## Dynamic programming (`dp`)
+
+**State.** Taken at tick 0 and at completion ticks, after completions are applied:
+`(t, inventory[R], runs in progress as sorted (end, process) pairs, run counts of processes
+that have max_runs)`. Run counts of uncapped processes and the start ticks of runs in
+progress do not affect the future, so they are left out; this canonical key is what makes
+different start orders collapse into one state.
+
+**Recurrence.** `V(s) = max over multisets M of legal starts at t of V(next(s + M))`, where
+`next` advances to the next completion; if nothing is running after `M`, the value is the
+inventory value at `T`. Multisets are enumerated with process indices in non-decreasing
+order, so each is generated exactly once. Memo entries store the value and the optimal
+multiset, so the schedule is read back by following the stored decisions from tick 0.
+
+**Complexity.** `O(S * M * P * R)` time and `O(S * (R + W))` memory, where `S` is the number
+of distinct event states (bounded by `(T + 1) * prod_r (max inventory_r + 1) * (in-progress
+configurations)`, exponential in `R` and `W`) and `M` is the number of start multisets per
+state (`<= C(P + W, W)`).
+
+**Limits.** Fails cleanly (no solution, `error` set) after `max_states` stored states
+(default 2e6) or when the time limit runs out; it has no anytime answer. Reports `states`
+and `memo_hits`.
+
+**When it wins / loses.** Wins when many paths reach the same states (e.g. several
+interchangeable processes). Loses on instances with large inventories or many resources,
+where states rarely repeat: it cannot prune, so it must visit all of them.
+
+---
+
+## Branch and bound (`branch_and_bound`)
+
+**Search tree.** The same event-based tree as `dp`: a node is `(state, from)`, where `from`
+is the lowest process index that may still start at this tick. Children are "start `p >=
+from`" and "start nothing more, advance to the next completion" (a leaf if nothing runs).
+
+**Upper bound (admissible; `pf::DualBound`).** A potential (LP-dual) bound. Choose a price
+`lambda >= 0` per free worker-tick and values `mu_r(tau)` per unit of resource `r` with
+`tau` ticks left, such that
+
+1. `mu_r(0) >= sell_price(r)` and `mu_r(tau)` is non-decreasing in `tau`;
+2. for every process `p` with duration `d <= tau`:
+   `sum_out q_o * mu_o(tau - d) <= sum_in q_i * mu_i(tau) + lambda * d`.
+
+Define `Phi = start_money + sum_r inv_r * mu_r(T - t) + sum_{running} sum_out q_o * mu_o(T - end)
++ lambda * (free worker-ticks left)`. Starting a run cannot increase `Phi` (condition 2:
+the inputs and `d` worker-ticks leave, the outputs arrive later); letting time pass cannot
+increase it (condition 1, and free worker-ticks only shrink). At `T`, `Phi` equals the
+earnings. So `Phi(state)` bounds every schedule from that state. It relaxes the worker
+limit (only priced through `lambda`) and ignores `max_runs`.
+
+`mu` is built bottom-up in `tau`: copy the row for `tau - 1`, then for each process whose
+constraint is violated, spread the deficit over its inputs in proportion to their
+quantities. Raising `mu(tau)` only strengthens the other constraints at the same `tau`
+(it is their input side), so one pass per `tau` suffices. Processes with no inputs can only
+be paid for by `lambda`; the smallest feasible `lambda` is found by bisection (the demand is
+non-increasing in `lambda`). A few larger `lambda` values are also tabulated and the node
+bound is the minimum over them. Cost: `O(K * T * sum_p |p|)` to build, `O(R + W * O)` per
+node, `K <= 4`. Example: on `sawmill` the root bound is 8, exactly the optimum.
+
+**Ordering and pruning.** Children are sorted by bound, best first (stable, so ties keep a
+deterministic order). A node or child whose bound is `<=` the incumbent is pruned. The
+incumbent starts as the better of the two greedy rollouts, so the search is anytime.
+
+**Transpositions.** After a `(state, from)` subtree is searched to completion it is added to
+a set; meeting it again is skipped. This is safe because the subtree's best value is then
+already `<=` the incumbent, which only grows. Capped at `max_transpositions` (default 4e6).
+
+**Stats.** `nodes`, `pruned`, `transposition_hits`, `root_bound`. `proven_optimal` is true
+only if the search finished. Deterministic whenever it finishes; if the time limit cuts it
+off, the answer depends on machine speed.
+
+**When it wins / loses.** Usually far faster than `dp` (on 10 medium generated instances it
+proved 8 optimal within 3 s, `dp` only 3), because the bound and a good incumbent prune most
+of the tree. It loses when the bound is loose: many inputless processes or tight worker
+limits (which the bound only prices) leave large gaps, and then it degrades to exhaustive
+search.
+
+---
+
+## Play-mode hints
+
+`GameSession::hint("branch_and_bound")` runs `BranchAndBoundSearch` from the current session
+state (which may be mid-run, at any tick: the exchange argument holds from any starting
+tick), with a short time limit (250 ms by default). The first run of the best continuation
+becomes the hint (`StartRun` if it starts now, otherwise `AdvanceTo` its tick, or `Finish`
+if nothing is worth starting); `optimal` says whether the search finished. Greedy hints
+are also available.
 
 ---
 
