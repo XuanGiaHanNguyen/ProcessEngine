@@ -30,7 +30,7 @@ class Search {
 
     bool any_legal = false;
     for (ProcessIndex p = 0; p < instance_.processes.size(); ++p) {
-      if (state.checkStart(p)) continue;
+      if (!state.canStart(p)) continue;
       any_legal = true;
       if (p < from) continue;
       SimState child = state;

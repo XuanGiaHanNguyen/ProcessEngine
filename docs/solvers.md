@@ -325,3 +325,56 @@ Baseline numbers (200 small instances, seed 1, Apple M-series, Release):
 | greedy | 8.21 | 86.96 | 152/200 | 0.002 |
 | greedy_potential | 1.65 | 50.00 | 185/200 | 0.002 |
 | brute_force | 0.00 | 0.00 | 200/200 | 1.197 |
+
+---
+
+## Performance (M6)
+
+Benchmarks: `engine/bench/solver_bench.cpp` (Google Benchmark). Instance `0` is
+`instances/medium/factory.json`; `n > 0` is `GeneratorParams::medium(n)`. Apple M-series,
+Release, single thread. Search statistics (nodes, pruned, states) are identical before and
+after, so the speedups are pure implementation, not a smaller search.
+
+```
+cmake -B build-bench -DPF_BUILD_BENCHMARKS=ON -DPF_BUILD_TESTS=OFF
+cmake --build build-bench -j && build-bench/engine/bench/pf_bench
+```
+
+| benchmark | work | before | after `canStart` | after compact state | speedup |
+|---|---|---|---|---|---|
+| `BM_DP/0` (factory) | 35 970 states | 245 ms | 143 ms | 40.2 ms | **6.1x** |
+| `BM_DP/1` | 1 451 states | 4.23 ms | 1.92 ms | 0.62 ms | **6.8x** |
+| `BM_DP/3` | 14 493 states | 47.9 ms | 27.1 ms | 7.49 ms | **6.4x** |
+| `BM_BranchAndBound/0` (factory) | 80 119 nodes | 77.5 ms | 57.9 ms | 12.6 ms | **6.2x** |
+| `BM_BranchAndBound/5` | 25 224 nodes | 26.7 ms | 20.4 ms | 4.69 ms | **5.7x** |
+| `BM_BranchAndBound/8` | 1.18 M nodes | 1456 ms | 1213 ms | 237 ms | **6.1x** |
+| `BM_BranchAndBound/10` | 66 333 nodes | 61.3 ms | 54.6 ms | 12.5 ms | **4.9x** |
+
+**What the profile showed** (macOS `sample` on `BM_BranchAndBound/8`, before): about 55% of
+samples in `malloc`/`free`, then `unordered_set::find` (pointer chasing through
+`std::vector<int64_t>` keys), then `SimState::checkStart` formatting error strings
+(`std::to_string`, `string::append`) for processes that could not start.
+
+**Fixes, in order:**
+
+1. `SimState::canStart()` checks the rules without building a message; solvers use it in
+   inner loops and `checkStart()` only formats a message for an actual violation.
+2. A compact, fixed-width state (`src/solvers/compact_state.hpp`):
+   `[tick | inventory | capped run counts | W sorted packed (end << 32 | process) slots | from]`.
+   It is canonical, so the state array is its own hash key (no key building), and copying a
+   state is one contiguous `memcpy` instead of three heap vectors.
+3. Pool allocation: B&B and DP keep one scratch buffer per search depth, reused for the
+   whole search, so after warm-up a node expansion does not allocate.
+4. `FlatStateMap`: open addressing with linear probing; keys live in one contiguous arena,
+   entries store the full 64-bit hash so mismatches rarely touch the key. This also removed
+   a ~1.4 s overshoot of the time limit, which was the cost of freeing millions of
+   `unordered_set` nodes.
+
+The compact rules duplicate `SimState`'s semantics for speed. That is acceptable because
+(a) every solver result is still re-checked by the independent validator and (b)
+`CompactState.MatchesSimStateOnRandomPlay` drives both with the same random actions on 300
+instances and requires identical inventory, legality, events, value, and encoding.
+
+CI runs the benchmarks on every push and uploads `bench.json`. Comparing against a stored
+baseline to flag >20% regressions needs a stable runner, so for now it is done by hand
+(compare two `bench.json` files).

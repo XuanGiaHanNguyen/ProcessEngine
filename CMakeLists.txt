@@ -12,6 +12,7 @@ endif()
 
 option(PF_BUILD_TESTS "Build ProcessForge tests" ON)
 option(PF_SANITIZE "Build with AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
+option(PF_BUILD_BENCHMARKS "Build Google Benchmark suites" OFF)
 option(PF_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")

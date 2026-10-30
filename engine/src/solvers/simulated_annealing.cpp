@@ -23,7 +23,7 @@ Rollout repair(const Instance& inst, Schedule schedule) {
   for (const ScheduledRun& run : schedule) {
     if (run.start_tick < sim.tick() || run.start_tick > inst.horizon) continue;
     sim.advanceTo(run.start_tick);
-    if (sim.checkStart(run.process)) continue;
+    if (!sim.canStart(run.process)) continue;
     sim.start(run.process);
     out.runs.push_back(run);
   }

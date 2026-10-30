@@ -108,33 +108,44 @@ double DualBound::generatorDemand(const Table& table) const {
   return demand;
 }
 
-double DualBound::bound(const Table& table, const SimState& state) const {
+double DualBound::bound(const Table& table, Tick tick, const Quantity* inventory,
+                        const std::vector<RunRef>& running) const {
   const Instance& inst = *instance_;
-  const Tick tau = inst.horizon - state.tick();
+  const Tick tau = inst.horizon - tick;
   const double* row = &table.mu[static_cast<std::size_t>(tau) * resources_];
   auto total = static_cast<double>(inst.start_money);
   for (std::size_t r = 0; r < resources_; ++r) {
-    total += static_cast<double>(state.inventory()[r]) * row[r];
+    total += static_cast<double>(inventory[r]) * row[r];
   }
   double busy = 0;
-  for (const ActiveRun& run : state.activeRuns()) {
+  for (const RunRef& run : running) {
     const double* at_end = &table.mu[static_cast<std::size_t>(inst.horizon - run.end) * resources_];
     for (const ResourceAmount& o : inst.processes[run.process].outputs) {
       total += static_cast<double>(o.qty) * at_end[o.resource];
     }
-    busy += static_cast<double>(run.end - state.tick());
+    busy += static_cast<double>(run.end - tick);
   }
   const double free_worker_ticks =
       static_cast<double>(inst.workers) * static_cast<double>(tau) - busy;
   return total + table.lambda * free_worker_ticks;
 }
 
-Quantity DualBound::upperBound(const SimState& state) const {
-  double best = bound(tables_.front(), state);
-  for (std::size_t i = 1; i < tables_.size(); ++i) best = std::min(best, bound(tables_[i], state));
+Quantity DualBound::upperBound(Tick tick, const Quantity* inventory,
+                               const std::vector<RunRef>& running) const {
+  double best = bound(tables_.front(), tick, inventory, running);
+  for (std::size_t i = 1; i < tables_.size(); ++i) {
+    best = std::min(best, bound(tables_[i], tick, inventory, running));
+  }
   // Round down, but never below the true value because of floating-point error.
   const double tolerance = 1e-7 * std::max(1.0, std::abs(best));
   return static_cast<Quantity>(std::floor(best + tolerance));
+}
+
+Quantity DualBound::upperBound(const SimState& state) const {
+  std::vector<RunRef> running;
+  running.reserve(state.activeRuns().size());
+  for (const ActiveRun& run : state.activeRuns()) running.push_back({run.end, run.process});
+  return upperBound(state.tick(), state.inventory().data(), running);
 }
 
 }  // namespace pf

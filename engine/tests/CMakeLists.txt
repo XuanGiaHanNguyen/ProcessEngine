@@ -1,5 +1,6 @@
 add_executable(pf_engine_tests
   baseline_solvers_test.cpp
+  compact_state_test.cpp
   exact_solvers_test.cpp
   game_session_test.cpp
   heuristics_test.cpp

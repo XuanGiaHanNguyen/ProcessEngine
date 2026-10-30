@@ -52,7 +52,7 @@ std::optional<ProcessIndex> greedyChoice(const SimState& state, GreedyScore scor
   std::optional<ProcessIndex> best;
   double best_score = 0;
   for (ProcessIndex index = 0; index < instance.processes.size(); ++index) {
-    if (state.checkStart(index)) continue;
+    if (!state.canStart(index)) continue;
     const Process& p = instance.processes[index];
     double out_value = 0;
     for (const ResourceAmount& o : p.outputs) {

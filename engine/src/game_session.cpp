@@ -61,7 +61,7 @@ std::vector<Action> GameSession::legalActions() const {
   if (finished()) return actions;
   const SimState& s = sim();
   for (ProcessIndex p = 0; p < instance_->processes.size(); ++p) {
-    if (!s.checkStart(p)) actions.push_back(Action::startRun(p));
+    if (s.canStart(p)) actions.push_back(Action::startRun(p));
   }
   if (s.tick() < instance_->horizon) {
     actions.push_back(Action::wait());

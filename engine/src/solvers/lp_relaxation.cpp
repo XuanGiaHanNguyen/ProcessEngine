@@ -171,7 +171,7 @@ Rollout followLp(const Instance& inst, const LpRelaxation& lp, bool greedy_fill,
     while (true) {
       std::optional<ProcessIndex> best;
       for (ProcessIndex p = 0; p < inst.processes.size(); ++p) {
-        if (pending[p] < 0.5 || sim.checkStart(p)) continue;
+        if (pending[p] < 0.5 || !sim.canStart(p)) continue;
         if (!best || pending[p] > pending[*best]) best = p;
       }
       if (!best) break;

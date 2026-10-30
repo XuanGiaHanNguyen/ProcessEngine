@@ -70,4 +70,23 @@ jobs:
         run: cmake -B build -DCMAKE_BUILD_TYPE=Debug
       - name: clang-tidy
         run: |
-          git ls-files 'engine/*.cpp' 'server/*.cpp' 'tools/*.cpp' | xargs -r clang-tidy-19 -p build --quiet
+          git ls-files 'engine/*.cpp' 'server/*.cpp' 'tools/*.cpp' | grep -v '^engine/bench/' | xargs -r clang-tidy-19 -p build --quiet
+
+  benchmarks:
+    name: Benchmarks
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang-18
+      CXX: clang++-18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          cmake -B build-bench -DCMAKE_BUILD_TYPE=Release -DPF_BUILD_BENCHMARKS=ON -DPF_BUILD_TESTS=OFF
+          cmake --build build-bench -j
+      - name: Run
+        run: build-bench/engine/bench/pf_bench --benchmark_out=bench.json --benchmark_out_format=json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmarks
+          path: bench.json
