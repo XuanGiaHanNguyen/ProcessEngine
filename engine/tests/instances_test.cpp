@@ -3,41 +3,23 @@
 #include "pf/json_io.hpp"
 #include "pf/validator.hpp"
 
-#include <filesystem>
-#include <fstream>
-#include <sstream>
-
 #include <gtest/gtest.h>
+
+#include "instance_files.hpp"
 
 namespace pf {
 namespace {
 
 namespace fs = std::filesystem;
-
-std::vector<fs::path> instanceFiles() {
-  std::vector<fs::path> files;
-  for (const auto& entry : fs::recursive_directory_iterator(PF_INSTANCES_DIR)) {
-    if (entry.is_regular_file() && entry.path().extension() == ".json") {
-      files.push_back(entry.path());
-    }
-  }
-  std::sort(files.begin(), files.end());
-  return files;
-}
-
-nlohmann::json load(const fs::path& path) {
-  std::ifstream in(path);
-  std::stringstream buffer;
-  buffer << in.rdbuf();
-  return nlohmann::json::parse(buffer.str());
-}
+using test::instanceFiles;
+using test::loadJson;
 
 TEST(HandMadeInstances, AtLeastFiveWithAKnownOptimum) {
   const auto files = instanceFiles();
   EXPECT_GE(files.size(), 5U);
   int with_optimum = 0;
   for (const auto& f : files) {
-    for (const auto& ref : load(f).value("reference_solutions", nlohmann::json::array())) {
+    for (const auto& ref : loadJson(f).value("reference_solutions", nlohmann::json::array())) {
       if (ref.value("optimal", false)) ++with_optimum;
     }
   }
@@ -47,7 +29,7 @@ TEST(HandMadeInstances, AtLeastFiveWithAKnownOptimum) {
 class HandMadeInstance : public ::testing::TestWithParam<fs::path> {};
 
 TEST_P(HandMadeInstance, ValidatorMatchesHandComputedEarnings) {
-  const nlohmann::json doc = load(GetParam());
+  const nlohmann::json doc = loadJson(GetParam());
   const auto parsed = json::parseInstance(doc);
   ASSERT_TRUE(parsed.ok()) << (parsed.errors.empty() ? "" : parsed.errors.front());
   ASSERT_TRUE(doc.contains("comment")) << "hand-made instances must document their answer";

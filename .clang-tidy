@@ -28,6 +28,7 @@ Checks: >
   -misc-const-correctness,
   -misc-use-anonymous-namespace,
   -readability-math-missing-parentheses,
+  -bugprone-random-generator-seed,
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*/(engine|server)/.*'
 FormatStyle: file

@@ -1,7 +1,11 @@
 # Core engine: pure C++, no web or I/O code, no third-party dependencies.
 add_library(pf_engine
   src/model.cpp
+  src/registry.cpp
   src/rules.cpp
+  src/solver.cpp
+  src/solvers/brute_force.cpp
+  src/solvers/greedy.cpp
   src/validator.cpp
   src/version.cpp)
 target_include_directories(pf_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
