@@ -34,6 +34,14 @@ build/server/pf_server --instances instances          # API on :8080
 cd web && npm ci && npm start                         # UI on :4200, proxies /api to :8080
 ```
 
+### Deploy
+
+[`render.yaml`](render.yaml) is a [Render](https://render.com) blueprint: in the dashboard,
+**New → Blueprint**, pick this repo, and apply. It creates the API (a Docker web service built
+from `docker/server.Dockerfile`) and the web app (a static site that forwards `/api/*` to the
+API), both deploying from `main`. On the free plan the API sleeps after about 15 idle minutes;
+the first request after that takes about a minute.
+
 ## What you can do
 
 **Build**: three levels, Easy (one stuffed-animal line, best known $58,100), Hard (four
