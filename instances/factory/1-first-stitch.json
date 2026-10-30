@@ -1,0 +1,153 @@
+{
+  "format": "processforge-factory/1",
+  "id": "first-stitch",
+  "name": "First Stitch",
+  "description": "Turn cotton and string into stuffed animals.",
+  "hours": 24,
+  "belt_capacity": 10,
+  "buffer_batches": 2,
+  "budget": null,
+  "resources": [
+    {"id": "cotton", "name": "Cotton", "kind": "raw"},
+    {"id": "string", "name": "String", "kind": "raw"},
+    {"id": "fabric", "name": "Fabric", "kind": "part"},
+    {"id": "stuffing", "name": "Stuffing", "kind": "part"},
+    {"id": "stuffed-animal", "name": "Stuffed animal", "kind": "product"}
+  ],
+  "suppliers": [
+    {
+      "id": "cotton-supply",
+      "resource": "cotton",
+      "max_rate": 40,
+      "unit_cost": 40,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "string-supply",
+      "resource": "string",
+      "max_rate": 24,
+      "unit_cost": 25,
+      "x": 0,
+      "y": 2
+    }
+  ],
+  "machine_types": [
+    {
+      "id": "loom",
+      "name": "Loom",
+      "cost": 1500,
+      "recipes": [
+        {
+          "id": "fabric",
+          "name": "Weave fabric",
+          "inputs": {"cotton": 4, "string": 2},
+          "outputs": {"fabric": 2},
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "carder",
+      "name": "Carder",
+      "cost": 1000,
+      "recipes": [
+        {
+          "id": "stuffing",
+          "name": "Card stuffing",
+          "inputs": {"cotton": 3},
+          "outputs": {"stuffing": 4},
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "sewing",
+      "name": "Sewing station",
+      "cost": 2000,
+      "recipes": [
+        {
+          "id": "stuffed-animal",
+          "name": "Sew stuffed animals",
+          "inputs": {"fabric": 2, "stuffing": 4, "string": 2},
+          "outputs": {"stuffed-animal": 2},
+          "hours": 2
+        }
+      ]
+    }
+  ],
+  "market": {
+    "x": 9,
+    "y": 3,
+    "listings": [{"resource": "stuffed-animal", "price": 900, "demand": 3, "overflow_price": 500}]
+  },
+  "slots": [
+    {"id": "s1", "x": 3, "y": 1},
+    {"id": "s2", "x": 3, "y": 3},
+    {"id": "s3", "x": 3, "y": 5},
+    {"id": "s4", "x": 6, "y": 1},
+    {"id": "s5", "x": 6, "y": 3}
+  ],
+  "objectives": [
+    {"kind": "run_test", "text": "Test the factory"},
+    {"kind": "step_hours", "hours": 6, "text": "Step through at least 6 hours of a test"},
+    {
+      "kind": "rate",
+      "resource": "stuffed-animal",
+      "per_hour": 2,
+      "for_hours": 4,
+      "text": "Sell 2 stuffed animals an hour, 4 hours in a row"
+    },
+    {"kind": "profit", "at_least": 9000, "text": "Earn $90"}
+  ],
+  "reference_designs": [
+    {
+      "name": "Initial",
+      "initial": true,
+      "design": {
+        "orders": {"cotton-supply": 8, "string-supply": 4},
+        "machines": [
+          {"slot": "s1", "type": "loom", "recipe": "fabric"},
+          {"slot": "s2", "type": "carder", "recipe": "stuffing"},
+          {"slot": "s3", "type": "sewing", "recipe": "stuffed-animal"}
+        ],
+        "belts": [
+          {"from": "cotton-supply", "to": "s1", "resource": "cotton", "weight": 1},
+          {"from": "cotton-supply", "to": "s2", "resource": "cotton", "weight": 1},
+          {"from": "string-supply", "to": "s1", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s3", "resource": "string", "weight": 1},
+          {"from": "s1", "to": "s3", "resource": "fabric", "weight": 1},
+          {"from": "s2", "to": "s3", "resource": "stuffing", "weight": 1},
+          {"from": "s3", "to": "market", "resource": "stuffed-animal", "weight": 1}
+        ]
+      },
+      "profit": 1620
+    },
+    {
+      "name": "Best known",
+      "design": {
+        "orders": {"cotton-supply": 7, "string-supply": 4},
+        "machines": [
+          {"slot": "s1", "type": "loom", "recipe": "fabric"},
+          {"slot": "s2", "type": "carder", "recipe": "stuffing"},
+          {"slot": "s3", "type": "sewing", "recipe": "stuffed-animal"},
+          {"slot": "s4", "type": "sewing", "recipe": "stuffed-animal"}
+        ],
+        "belts": [
+          {"from": "cotton-supply", "to": "s1", "resource": "cotton", "weight": 1},
+          {"from": "cotton-supply", "to": "s2", "resource": "cotton", "weight": 1},
+          {"from": "string-supply", "to": "s1", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s3", "resource": "string", "weight": 1},
+          {"from": "string-supply", "to": "s4", "resource": "string", "weight": 1},
+          {"from": "s1", "to": "s3", "resource": "fabric", "weight": 1},
+          {"from": "s1", "to": "s4", "resource": "fabric", "weight": 1},
+          {"from": "s2", "to": "s3", "resource": "stuffing", "weight": 1},
+          {"from": "s2", "to": "s4", "resource": "stuffing", "weight": 1},
+          {"from": "s3", "to": "market", "resource": "stuffed-animal", "weight": 1},
+          {"from": "s4", "to": "market", "resource": "stuffed-animal", "weight": 1}
+        ]
+      },
+      "profit": 9980
+    }
+  ]
+}
