@@ -8,6 +8,7 @@ add_executable(pf_engine_tests
   json_io_test.cpp
   model_test.cpp
   property_test.cpp
+  random_test.cpp
   registry_test.cpp
   rules_test.cpp
   timeline_test.cpp

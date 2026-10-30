@@ -51,8 +51,14 @@ void BM_DP(benchmark::State& state) { solve(state, "dp"); }
 void BM_BranchAndBound(benchmark::State& state) { solve(state, "branch_and_bound"); }
 
 // Instance ids: 0 = instances/medium/factory.json, n > 0 = GeneratorParams::medium(n).
-BENCHMARK(BM_DP)->Arg(0)->Arg(1)->Arg(3)->Unit(benchmark::kMillisecond);
-BENCHMARK(BM_BranchAndBound)->Arg(0)->Arg(5)->Arg(8)->Arg(10)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_DP)->Arg(0)->Arg(2)->Arg(14)->Arg(15)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_BranchAndBound)
+    ->Arg(0)
+    ->Arg(3)
+    ->Arg(6)
+    ->Arg(9)
+    ->Arg(15)
+    ->Unit(benchmark::kMillisecond);
 
 void BM_Validate(benchmark::State& state) {
   const pf::Instance inst = pf::generate(pf::GeneratorParams::large(1)).instance;
