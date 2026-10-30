@@ -1,0 +1,42 @@
+.scroll {
+  overflow: auto;
+  max-height: 460px;
+}
+svg {
+  display: block;
+}
+.edge {
+  fill: none;
+  stroke: #8792a6;
+  stroke-width: 1.4;
+}
+.qty {
+  font-size: 11px;
+  fill: #384254;
+  text-anchor: middle;
+  font-weight: 600;
+}
+rect {
+  stroke-width: 2;
+}
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  text-anchor: middle;
+  fill: #1e2533;
+}
+.sub {
+  font-size: 10px;
+  text-anchor: middle;
+  fill: #556074;
+}
+.process .label,
+.process .sub {
+  fill: #fff;
+}
+.faded {
+  opacity: 0.3;
+}
+.legend {
+  margin: 0.4rem 0 0;
+}

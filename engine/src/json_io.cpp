@@ -1,5 +1,7 @@
 #include "pf/json_io.hpp"
 
+#include "pf/limits.hpp"
+
 #include <algorithm>
 #include <limits>
 #include <ranges>
@@ -159,7 +161,8 @@ void readProcesses(Reader& r, const json& j, Instance& instance) {
     }
     if (!item.contains("duration")) {
       r.error(path, "missing required field 'duration'");
-    } else if (auto d = r.integer<Tick>(item["duration"], path + ".duration", 1, kInt32Max)) {
+    } else if (auto d =
+                   r.integer<Tick>(item["duration"], path + ".duration", 1, limits::kMaxHorizon)) {
       p.duration = *d;
     }
     if (item.contains("max_runs") && !item["max_runs"].is_null()) {
@@ -207,12 +210,12 @@ ParseResult<Instance> parseInstance(const json& j) {
   }
   if (!j.contains("workers")) {
     r.error("", "missing required field 'workers'");
-  } else if (auto w = r.integer<std::int32_t>(j["workers"], "workers", 1, kInt32Max)) {
+  } else if (auto w = r.integer<std::int32_t>(j["workers"], "workers", 1, limits::kMaxWorkers)) {
     instance.workers = *w;
   }
   if (!j.contains("horizon")) {
     r.error("", "missing required field 'horizon'");
-  } else if (auto h = r.integer<Tick>(j["horizon"], "horizon", 0, kInt32Max)) {
+  } else if (auto h = r.integer<Tick>(j["horizon"], "horizon", 0, limits::kMaxHorizon)) {
     instance.horizon = *h;
   }
   if (j.contains("start_money")) {
@@ -513,6 +516,30 @@ ParseResult<GameSession> parseSession(const json& j) {
   for (std::size_t i = 0; i < redo_count; ++i) (void)session.undo();
   result.value = std::move(session);
   return result;
+}
+
+json toJson(const Timeline& timeline, const Instance& instance) {
+  json runs = json::array();
+  for (const TimelineRun& r : timeline.runs) {
+    runs.push_back({{"run_index", r.run_index},
+                    {"process_id", instance.processes[r.process].id},
+                    {"start", r.start},
+                    {"end", r.end},
+                    {"slot", r.slot}});
+  }
+  json points = json::array();
+  for (const TimelinePoint& p : timeline.points) {
+    json inventory = json::object();
+    for (std::size_t i = 0; i < p.inventory.size(); ++i) {
+      inventory[instance.resources[i].id] = p.inventory[i];
+    }
+    points.push_back({{"tick", p.tick},
+                      {"inventory", std::move(inventory)},
+                      {"busy_workers", p.busy_workers},
+                      {"value", p.value}});
+  }
+  return {
+      {"earnings", timeline.earnings}, {"runs", std::move(runs)}, {"points", std::move(points)}};
 }
 
 ParseResult<GeneratorParams> parseGeneratorParams(const json& j) {

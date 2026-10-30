@@ -3,6 +3,7 @@
 #include "pf/generator.hpp"
 #include "pf/json_io.hpp"
 #include "pf/registry.hpp"
+#include "pf/timeline.hpp"
 #include "pf/validator.hpp"
 
 #include <filesystem>
@@ -347,6 +348,30 @@ void Server::registerRoutes() {
                                {{"errors", schedule.errors}});
         }
         return jsonResponse(200, json::toJson(validate(*instance, *schedule.value), *instance));
+      });
+
+  CROW_ROUTE(app_, "/api/schedules/timeline")
+      .methods("POST"_method)([this](const crow::request& req) {
+        crow::response error;
+        const auto body = parseBody(req, config_.max_body_bytes, error);
+        if (!body) return error;
+        if (!body->contains("instance") || !body->contains("schedule")) {
+          return errorResponse(400, "invalid_request", "expected {instance, schedule}");
+        }
+        const auto instance = parseInstanceField((*body)["instance"], error);
+        if (!instance) return error;
+        const auto schedule = json::parseSchedule((*body)["schedule"], *instance);
+        if (!schedule.value) {
+          return errorResponse(400, "invalid_schedule", schedule.errors.front(),
+                               {{"errors", schedule.errors}});
+        }
+        const auto timeline = buildTimeline(*instance, *schedule.value);
+        if (!timeline) {
+          const ValidationReport report = validate(*instance, *schedule.value);
+          return errorResponse(422, report.violation ? toString(report.violation->kind) : "invalid",
+                               report.violation ? report.violation->message : "invalid schedule");
+        }
+        return jsonResponse(200, json::toJson(*timeline, *instance));
       });
 
   registerSolveRoutes();

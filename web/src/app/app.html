@@ -1,0 +1,28 @@
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="app-header">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">⚙</span>
+    <span class="brand-name">ProcessForge</span>
+    <span class="tagline">production process optimizer</span>
+  </div>
+  <nav class="mode-switch" aria-label="Mode">
+    <a routerLink="/auto" routerLinkActive="active" ariaCurrentWhenActive="page">Auto</a>
+    <a routerLink="/play" routerLinkActive="active" ariaCurrentWhenActive="page">Play</a>
+  </nav>
+  <div class="server-status" role="status">
+    @switch (online()) {
+      @case (true) {
+        <span class="dot ok" aria-hidden="true"></span> Server online
+      }
+      @case (false) {
+        <span class="dot bad" aria-hidden="true"></span> Server offline
+      }
+      @default {
+        <span class="dot" aria-hidden="true"></span> Connecting…
+      }
+    }
+  </div>
+</header>
+<main id="main" tabindex="-1">
+  <router-outlet />
+</main>

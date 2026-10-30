@@ -1,0 +1,93 @@
+<section class="card" aria-labelledby="results-title" data-testid="results">
+  <div class="row">
+    <h2 id="results-title">Results</h2>
+    <span class="spacer"></span>
+    @if (choices().length > 1) {
+      <label class="field inline">
+        Show
+        <select data-testid="result-select" (change)="selectSolver.emit($any($event.target).value)">
+          @for (c of choices(); track c.solver_name) {
+            <option [value]="c.solver_name" [selected]="c.solver_name === solution()?.solver_name">
+              {{ c.solver_name }} ({{ c.earnings }})
+            </option>
+          }
+        </select>
+      </label>
+    }
+    @if (solution()?.valid) {
+      <button type="button" (click)="replay.emit(solution()!)">Replay in Play mode</button>
+    }
+  </div>
+
+  @if (!solution()) {
+    <p class="empty">Run a solver to see its schedule here.</p>
+  } @else if (!solution()!.valid) {
+    <p class="alert" role="alert">
+      {{ solution()!.solver_name }} found no valid schedule: {{ solution()!.error }}
+    </p>
+  } @else {
+    @let s = solution()!;
+    <dl class="summary">
+      <div>
+        <dt>Earnings</dt>
+        <dd data-testid="earnings">{{ s.earnings }}</dd>
+      </div>
+      <div>
+        <dt>Profit vs. doing nothing</dt>
+        <dd>{{ s.earnings - baseline() >= 0 ? '+' : '' }}{{ s.earnings - baseline() }}</dd>
+      </div>
+      <div>
+        <dt>Runs</dt>
+        <dd>{{ s.runs.length }}</dd>
+      </div>
+      <div>
+        <dt>Runtime</dt>
+        <dd>{{ s.runtime_ms.toFixed(1) }} ms</dd>
+      </div>
+      <div>
+        <dt>Optimality</dt>
+        <dd>
+          @if (s.proven_optimal) {
+            <span class="badge ok">proven optimal</span>
+          } @else {
+            <span class="badge warn">not proven</span>
+          }
+        </dd>
+      </div>
+    </dl>
+    @if (statEntries(s).length) {
+      <p class="small muted stats">
+        @for (st of statEntries(s); track st[0]; let last = $last) {
+          <span class="mono">{{ st[0] }}</span> {{ st[1] }}{{ last ? '' : ' · ' }}
+        }
+      </p>
+    }
+
+    @if (loading()) {
+      <p class="muted"><span class="spinner" aria-hidden="true"></span> Laying out the timeline…</p>
+    }
+    @if (error(); as err) {
+      <p class="alert" role="alert">{{ err }}</p>
+    }
+    @if (timeline(); as t) {
+      <h3>Timeline (runs per worker slot)</h3>
+      @if (bars().length === 0) {
+        <p class="empty small">
+          This schedule starts no runs: selling the start inventory is best.
+        </p>
+      } @else {
+        <app-gantt [bars]="bars()" [workers]="instance().workers" [horizon]="instance().horizon" />
+      }
+      <h3>Inventory over time</h3>
+      @if (inventoryChart(); as cfg) {
+        <app-chart
+          [config]="cfg"
+          [height]="230"
+          label="Inventory of each resource over time for the selected schedule"
+        />
+      } @else {
+        <p class="empty small">Inventory never changes.</p>
+      }
+    }
+  }
+</section>
