@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(ProcessForge VERSION 0.1.0 LANGUAGES CXX)
+project(ProcessEngine VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,7 +10,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-option(PF_BUILD_TESTS "Build ProcessForge tests" ON)
+option(PF_BUILD_TESTS "Build ProcessEngine tests" ON)
 option(PF_SANITIZE "Build with AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
 option(PF_BUILD_SERVER "Build the HTTP/WebSocket server" ON)
 option(PF_BUILD_BENCHMARKS "Build Google Benchmark suites" OFF)

@@ -1,0 +1,48 @@
+# Render blueprint: Dashboard → New → Blueprint → this repo. Deploys from main on every push.
+#
+# - processengine-api: the C++ server (docker/server.Dockerfile). On the free plan it sleeps
+#   after about 15 idle minutes, and the next request wakes it in about a minute.
+# - processengine: the Angular app as a static site (never sleeps). It forwards /api/* to the
+#   API, so the browser talks to one origin, as with nginx in docker-compose.yml.
+#
+# If Render gives the API a different URL than https://processengine-api.onrender.com (the
+# name was taken), change the /api/* rewrite below to match.
+services:
+  - type: web
+    name: processengine-api
+    runtime: docker
+    plan: free
+    branch: main
+    dockerfilePath: ./docker/server.Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: "8080"
+    buildFilter:
+      paths:
+        - CMakeLists.txt
+        - cmake/**
+        - engine/**
+        - server/**
+        - tools/**
+        - instances/**
+        - docker/server.Dockerfile
+
+  - type: web
+    name: processengine
+    runtime: static
+    branch: main
+    rootDir: web
+    buildCommand: npm ci --no-audit --no-fund && npx ng build
+    staticPublishPath: dist/web/browser
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://processengine-api.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html

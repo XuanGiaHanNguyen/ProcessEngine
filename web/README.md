@@ -1,6 +1,6 @@
-# ProcessForge web UI
+# ProcessEngine web UI
 
-Angular app for ProcessForge (Auto and Play modes). See the [root README](../README.md) and
+Angular app for ProcessEngine (Auto and Play modes). See the [root README](../README.md) and
 [docs/api.md](../docs/api.md).
 
 ```bash

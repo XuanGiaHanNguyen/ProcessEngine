@@ -4,14 +4,18 @@
 }
 
 h3 {
-  font-size: 1rem;
+  font-family: var(--fun);
+  font-weight: 600;
+  font-size: 1.1rem;
   margin: 1rem 0 0.4rem;
   &:first-child {
     margin-top: 0;
   }
 }
 h4 {
-  font-size: 0.85rem;
+  font-family: var(--fun);
+  font-weight: 600;
+  font-size: 0.95rem;
   margin: 0.9rem 0 0.3rem;
 }
 p {
@@ -19,7 +23,7 @@ p {
 }
 .note {
   font-size: 0.85rem;
-  color: #e6defc;
+  color: var(--muted);
 }
 
 button,
@@ -30,38 +34,46 @@ button,
 .go {
   width: 100%;
   padding: 0.55rem;
-  border-radius: 10px;
-  border: none;
-  background: #2fae5f;
+  border-radius: 8px;
+  border: 2px solid var(--ink);
+  background: var(--green);
   color: #fff;
-  font-weight: 700;
+  font: 600 1.05rem var(--fun);
+  box-shadow: 0 4px 0 var(--ink);
+  &:not(:disabled):active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 var(--ink);
+  }
   &.small {
     width: auto;
     padding: 0.35rem 1rem;
   }
   &:disabled {
-    background: #4a3f78;
-    color: #c9bfec;
+    background: #b9c2b3;
+    color: #eef1ec;
+    border-color: #7d8579;
+    box-shadow: 0 4px 0 #7d8579;
     cursor: default;
   }
   &:not(:disabled):hover,
   &:focus-visible {
-    background: #3cc570;
+    background: #4cc457;
   }
 }
 .soft {
   display: inline-block;
   padding: 0.4rem 0.7rem;
   border-radius: 9px;
-  border: none;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
+  border: 2px solid var(--ink);
+  background: #fff;
+  color: var(--ink);
   font-weight: 600;
   font-size: 0.85rem;
+  box-shadow: 0 2px 0 var(--ink);
   &:hover,
   &:focus-within,
   &:focus-visible {
-    background: rgba(255, 255, 255, 0.24);
+    background: var(--yellow);
   }
 }
 .file input {
@@ -95,9 +107,12 @@ button,
     font-size: 0.85rem;
     cursor: pointer;
   }
+  input {
+    accent-color: var(--green);
+  }
   small {
     display: block;
-    color: #d8ccff;
+    color: var(--muted);
     font-size: 0.75rem;
   }
 }
@@ -116,23 +131,24 @@ button,
   input {
     font: inherit;
     padding: 0.3rem;
-    border-radius: 7px;
-    border: 1px solid #c9b6ff;
-    background: #3d2096;
-    color: #fff;
+    border-radius: 8px;
+    border: 2px solid var(--ink);
+    background: #fff;
+    color: var(--ink);
     min-width: 0;
   }
 }
 .progress {
-  height: 6px;
+  height: 10px;
   margin-top: 0.5rem;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.18);
+  border-radius: 5px;
+  border: 2px solid var(--ink);
+  background: #fff;
   overflow: hidden;
   span {
     display: block;
     height: 100%;
-    background: #3cc570;
+    background: var(--green);
     transition: width 0.25s linear;
   }
 }
@@ -145,28 +161,28 @@ button,
   th {
     text-align: left;
     font-size: 0.75rem;
-    color: #d8ccff;
+    color: var(--muted);
   }
   td,
   th {
     padding: 0.25rem 0.2rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    border-bottom: 1px solid var(--line);
   }
   .bad {
-    color: #ffc2c2;
+    color: var(--red-dark);
   }
   .acts {
     white-space: nowrap;
     text-align: right;
     button {
-      border: none;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.16);
-      color: #fff;
-      padding: 0.15rem 0.45rem;
+      border: 2px solid var(--ink);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--ink);
+      padding: 0.1rem 0.45rem;
       &:hover,
       &:focus-visible {
-        background: rgba(255, 255, 255, 0.3);
+        background: var(--yellow);
       }
     }
   }
@@ -175,45 +191,54 @@ button,
 .card {
   margin-top: 0.5rem;
   padding: 0.6rem 0.7rem;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.22);
+  border-radius: 8px;
+  border: 2px solid var(--ink);
+  background: var(--yellow-soft);
   .hint-text {
-    color: #fff;
+    color: var(--ink);
     font-weight: 600;
   }
   .gain {
-    color: #7dffa9;
+    color: var(--green-dark);
+    font-family: var(--fun);
     font-weight: 700;
   }
 }
 
 .stars {
-  font-size: 1.5rem;
-  letter-spacing: 0.15rem;
+  display: flex;
+  gap: 4px;
+  font-size: 1.7rem;
   margin: 0;
-  span {
-    color: rgba(255, 255, 255, 0.25);
+  ng-icon {
+    color: var(--ink);
+    --star: #e6dfca;
     &.lit {
-      color: #ffd447;
+      --star: var(--yellow);
+    }
+    // The star's SVG lives inside ng-icon, out of reach of this component's styles.
+    ::ng-deep svg {
+      fill: var(--star);
     }
   }
 }
 .meter {
-  height: 8px;
+  height: 12px;
   margin: 0.3rem 0 0.5rem;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  border: 2px solid var(--ink);
+  background: #fff;
   overflow: hidden;
   span {
     display: block;
     height: 100%;
-    background: #ffd447;
+    background: var(--yellow);
   }
 }
 
 .legend {
   font-size: 0.75rem;
-  color: #e6defc;
+  color: var(--muted);
   .busy {
     color: #3fae6a;
   }
@@ -223,4 +248,15 @@ button,
   .blocked {
     color: #d9534f;
   }
+}
+
+ng-icon {
+  vertical-align: -0.15em;
+}
+.go,
+.soft {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }

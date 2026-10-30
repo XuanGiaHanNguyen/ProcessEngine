@@ -40,7 +40,7 @@ function toApiError(err: unknown): ApiError {
       return new ApiError(err.status, body.error, body.reason ?? body.error, body);
     }
     if (err.status === 0) {
-      return new ApiError(0, 'network', 'Cannot reach the ProcessForge server. Is it running?');
+      return new ApiError(0, 'network', 'Cannot reach the ProcessEngine server. Is it running?');
     }
     return new ApiError(err.status, 'http_error', `${err.status} ${err.statusText}`);
   }

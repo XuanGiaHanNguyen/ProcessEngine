@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# ProcessForge server: build the C++ engine + Crow server, ship a slim runtime image.
+# ProcessEngine server: build the C++ engine + Crow server, ship a slim runtime image.
 
 FROM ubuntu:24.04 AS build
 RUN apt-get update \
@@ -19,10 +19,10 @@ FROM ubuntu:24.04
 RUN apt-get update \
  && apt-get install -y --no-install-recommends curl \
  && rm -rf /var/lib/apt/lists/* \
- && useradd --system --uid 10001 processforge
+ && useradd --system --uid 10001 processengine
 COPY --from=build /src/build/server/pf_server /src/build/tools/pf_compare /usr/local/bin/
 COPY instances /app/instances
-USER processforge
+USER processengine
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --retries=5 CMD curl -fsS http://localhost:8080/api/health || exit 1
 ENTRYPOINT ["pf_server", "--port", "8080", "--instances", "/app/instances"]

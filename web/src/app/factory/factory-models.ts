@@ -90,6 +90,8 @@ export interface FactoryLevel {
   belt_capacity: number;
   buffer_batches: number;
   budget: number | null;
+  /** Units all suppliers' stock may hold together (the warehouse); null means unlimited. */
+  storage?: number | null;
   resources: FactoryResource[];
   suppliers: Supplier[];
   machine_types: MachineType[];
@@ -151,6 +153,9 @@ export interface HourReport {
   machines: MachineHour[];
   belts: number[];
   stock: Record<string, number>;
+  /** Units each supplier delivered (and charged for); less than its order when the
+   * warehouse is full. */
+  delivered?: Record<string, number>;
 }
 
 /** The per-hour report of POST /api/factory/simulate. */

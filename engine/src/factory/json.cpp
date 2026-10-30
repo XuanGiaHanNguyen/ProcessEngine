@@ -145,10 +145,10 @@ pf::json::ParseResult<Level> parseLevel(const Json& j) {
   if (!rd.object(j, "level")) return {std::nullopt, rd.errors};
   rd.onlyKeys(j, "level",
               {"format", "id", "name", "description", "comment", "hours", "belt_capacity",
-               "buffer_batches", "budget", "resources", "suppliers", "machine_types", "market",
-               "slots", "objectives", "reference_designs"});
-  if (rd.str(j, "format", "level", true) != "processforge-factory/1") {
-    rd.fail("level.format", "must be \"processforge-factory/1\"");
+               "buffer_batches", "budget", "storage", "resources", "suppliers", "machine_types",
+               "market", "slots", "objectives", "reference_designs"});
+  if (rd.str(j, "format", "level", true) != "processengine-factory/1") {
+    rd.fail("level.format", "must be \"processengine-factory/1\"");
   }
   level.id = rd.str(j, "id", "level", true);
   level.name = rd.str(j, "name", "level", false, level.id);
@@ -158,6 +158,8 @@ pf::json::ParseResult<Level> parseLevel(const Json& j) {
   level.buffer_batches = small(rd.integer(j, "buffer_batches", "level", false, 2));
   if (j.contains("budget") && !j["budget"].is_null())
     level.budget = rd.integer(j, "budget", "level", true);
+  if (j.contains("storage") && !j["storage"].is_null())
+    level.storage = small(rd.integer(j, "storage", "level", true));
 
   if (j.contains("resources") && rd.array(j["resources"], "resources")) {
     for (Index i = 0; i < j["resources"].size(); ++i) {
@@ -426,6 +428,9 @@ Json toJson(const SimResult& result, const Level& level, const Design& design) {
     }
     Json stock = Json::object();
     for (Index s = 0; s < h.stock.size(); ++s) stock[level.suppliers[s].id] = h.stock[s];
+    Json delivered = Json::object();
+    for (Index s = 0; s < h.delivered.size(); ++s)
+      delivered[level.suppliers[s].id] = h.delivered[s];
     hours.push_back({{"hour", h.hour},
                      {"revenue", h.revenue},
                      {"purchases", h.purchases},
@@ -433,7 +438,8 @@ Json toJson(const SimResult& result, const Level& level, const Design& design) {
                      {"sold", perResource(h.sold, level)},
                      {"machines", machines},
                      {"belts", h.belt_moved},
-                     {"stock", stock}});
+                     {"stock", stock},
+                     {"delivered", delivered}});
   }
   return {{"profit", result.profit},
           {"sales", result.sales},

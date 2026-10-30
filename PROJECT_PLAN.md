@@ -1,4 +1,4 @@
-# ProcessForge: Production Process Optimizer
+# ProcessEngine: Production Process Optimizer
 
 A C++ optimization engine with an Angular frontend. Given a set of production processes (recipes that turn input resources into output resources over time), a starting inventory, limited worker slots, and a time horizon, find the schedule that maximizes earnings. Multiple solver algorithms are pluggable and compared side by side in the UI.
 
@@ -92,7 +92,7 @@ Tooling: `clang-format`, `clang-tidy`, sanitizers (ASan/UBSan) in CI, ESLint + P
 ## 4. Repository Layout
 
 ```
-processforge/
+processengine/
   PROJECT_PLAN.md
   README.md
   CMakeLists.txt

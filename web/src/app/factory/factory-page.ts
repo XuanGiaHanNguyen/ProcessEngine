@@ -7,13 +7,34 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import {
+  lucideBot,
+  lucideCheck,
+  lucideChevronLeft,
+  lucideChevronRight,
+  lucideCircleAlert,
+  lucideLightbulb,
+  lucidePanelRightClose,
+  lucidePanelRightOpen,
+  lucidePause,
+  lucidePencil,
+  lucidePlay,
+  lucideRedo2,
+  lucideRotateCcw,
+  lucideSkipBack,
+  lucideUndo2,
+  lucideWrench,
+  lucideX,
+} from '@ng-icons/lucide';
 
 import * as ops from './design-ops';
 import { FactoryAuto } from './factory-auto';
-import { CanvasSelection, FactoryCanvas } from './factory-canvas';
+import { FactoryLine3d } from './factory-line-3d';
+import { FloorSelection } from './floor-layout';
 import { FactoryInspector } from './factory-inspector';
 import { Design, money } from './factory-models';
-import { iconFor } from './icons';
+import { MARKET_ICON, iconFor } from './icons';
 import { FactoryPlay } from './factory-play';
 import { MoneyChart } from './money-chart';
 import { FactoryStore } from './factory-store';
@@ -21,18 +42,40 @@ import { FactoryStore } from './factory-store';
 type PanelId = 'build' | 'auto' | 'play';
 
 /**
- * The toy factory: edit it on a D3 floor, test and play it back, let the optimizers build
+ * The toy factory: edit it on a 3D floor, test and play it back, let the optimizers build
  * it (Auto), and get hints, a score, a timeline and share links (Play).
  */
 @Component({
   selector: 'app-factory-page',
   imports: [
     FactoryAuto,
-    FactoryCanvas,
+    FactoryLine3d,
     FactoryInspector,
     FactoryPlay,
     MoneyChart,
+    NgIcon,
     NgTemplateOutlet,
+  ],
+  viewProviders: [
+    provideIcons({
+      lucideBot,
+      lucideCheck,
+      lucideChevronLeft,
+      lucideChevronRight,
+      lucideCircleAlert,
+      lucideLightbulb,
+      lucidePanelRightClose,
+      lucidePanelRightOpen,
+      lucidePause,
+      lucidePencil,
+      lucidePlay,
+      lucideRedo2,
+      lucideRotateCcw,
+      lucideSkipBack,
+      lucideUndo2,
+      lucideWrench,
+      lucideX,
+    }),
   ],
   providers: [FactoryStore],
   templateUrl: './factory-page.html',
@@ -43,13 +86,16 @@ type PanelId = 'build' | 'auto' | 'play';
 export class FactoryPage implements OnInit {
   protected readonly store = inject(FactoryStore);
   protected readonly money = money;
-  protected readonly panels: { id: PanelId; label: string }[] = [
-    { id: 'build', label: '🔧 Build' },
-    { id: 'auto', label: '🤖 Auto' },
-    { id: 'play', label: '💡 Play' },
+  protected readonly panels: { id: PanelId; label: string; icon: string }[] = [
+    { id: 'build', label: 'Build', icon: 'lucideWrench' },
+    { id: 'auto', label: 'Auto', icon: 'lucideBot' },
+    { id: 'play', label: 'Play', icon: 'lucideLightbulb' },
   ];
   /** Which tab of the right panel is open. */
   protected readonly panel = signal<PanelId>('build');
+  /** Whether the right panel is folded away to a strip of tab buttons. It starts folded, so
+   * the floor gets the room; selecting something or a tab button unfolds it. */
+  protected readonly collapsed = signal(true);
 
   protected readonly target = computed(
     () =>
@@ -86,11 +132,13 @@ export class FactoryPage implements OnInit {
     const name = (r: string) => level.resources.find((x) => x.id === r)?.name ?? r;
     if (sel.id === 'market') {
       return {
-        title: '🛒 Market',
+        icon: MARKET_ICON,
+        title: 'Market',
         status: h.revenue > 0 ? 'busy' : 'starved',
         statusText: `Earned ${money(h.revenue)} this hour`,
         buffers: Object.entries(h.sold).map(([r, n]) => ({
-          label: `${iconFor(r)} ${name(r)} sold`,
+          icon: iconFor(r),
+          label: `${name(r)} sold`,
           value: n,
         })),
       };
@@ -98,10 +146,11 @@ export class FactoryPage implements OnInit {
     const supplier = level.suppliers.find((x) => x.id === sel.id);
     if (supplier) {
       return {
-        title: `${iconFor(supplier.resource)} ${name(supplier.resource)} supplier`,
+        icon: iconFor(supplier.resource),
+        title: `${name(supplier.resource)} supplier`,
         status: 'busy',
         statusText: `Delivers ${t.design.orders[supplier.id] ?? 0} per hour`,
-        buffers: [{ label: 'Waiting in stock', value: h.stock[supplier.id] ?? 0 }],
+        buffers: [{ icon: null, label: 'Waiting in stock', value: h.stock[supplier.id] ?? 0 }],
       };
     }
     const i = t.design.machines.findIndex((m) => m.slot === sel.id);
@@ -115,19 +164,22 @@ export class FactoryPage implements OnInit {
           ? 'Blocked: its output is full and nothing takes it away'
           : `Waiting for ${mh.missing.map(name).join(', ')}`;
     return {
+      icon: null,
       title: `${type?.name ?? 'Machine'} ${sel.id}`,
       status: mh.status,
       statusText,
       buffers: [
         ...Object.entries(mh.inputs).map(([r, n]) => ({
-          label: `${iconFor(r)} ${name(r)} in`,
+          icon: iconFor(r),
+          label: `${name(r)} in`,
           value: n,
         })),
         ...Object.entries(mh.outputs).map(([r, n]) => ({
-          label: `${iconFor(r)} ${name(r)} out`,
+          icon: iconFor(r),
+          label: `${name(r)} out`,
           value: n,
         })),
-        { label: 'Batches done', value: mh.batches_done },
+        { icon: null, label: 'Batches done', value: mh.batches_done },
       ],
     };
   });
@@ -140,22 +192,31 @@ export class FactoryPage implements OnInit {
     void this.store.init(shared);
   }
 
-  /** Tab label for the i-th level: Easy and Hard when there are two. */
+  /** Tab label for the i-th level: Easy and Hard, then Expert when there are three. */
   protected difficulty(i: number): string {
     const n = this.store.levels().length;
-    if (n === 2) return i === 0 ? 'Easy' : 'Hard';
+    if (n === 2 || n === 3) return ['Easy', 'Hard', 'Expert'][i];
     return `Level ${i + 1}`;
   }
 
   protected selectNode(id: string | null): void {
     this.store.selection.set(id ? { kind: 'node', id } : null);
+    if (id) this.openPanel('build');
   }
 
   protected selectBelt(index: number): void {
     this.store.selection.set({ kind: 'belt', index });
+    this.openPanel('build');
   }
 
-  protected asCanvasSelection(): CanvasSelection {
+  /** Opens a tab of the right panel, unfolding it if it was folded away. Selecting a node or
+   * belt opens Build, where its inspector is. */
+  protected openPanel(id: PanelId): void {
+    this.panel.set(id);
+    this.collapsed.set(false);
+  }
+
+  protected asFloorSelection(): FloorSelection {
     return this.store.selection();
   }
 

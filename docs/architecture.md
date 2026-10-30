@@ -1,12 +1,12 @@
 # Architecture
 
-ProcessForge has three layers. Game rules live in exactly one place per game (the engine's
+ProcessEngine has three layers. Game rules live in exactly one place per game (the engine's
 `SimState` for scheduling, `FactorySim` for Factory mode); everything else calls into it.
 
 ```mermaid
 flowchart LR
   subgraph Browser["Browser (Angular, web/)"]
-    Factory["Toy factory<br/>Build: D3 floor · tests · playback<br/>Auto: optimizers · comparison<br/>Play: hints · score · timeline · share"]
+    Factory["Toy factory<br/>Build: 3D floor · tests · playback<br/>Auto: optimizers · comparison<br/>Play: hints · score · timeline · share"]
     Api["ApiService<br/>(typed docs/api.md)"]
     Factory --> Api
   end
@@ -108,16 +108,29 @@ profits, hints and per-hour reports all come from the server.
 
 `FactoryStore` holds the level, the draft design (undo/redo, saved per level in
 localStorage), the server's check of it, the tested factories with their playback hour and
-speed, the last Auto run and the last hint. `FactoryCanvas` draws the floor with D3 (d3-zoom,
-d3-drag for laying belts, d3-scale layout, D3 transitions for items on belts). Belts are
-routed in four steps: the side of each node they leave or enter, a fanned-out port per belt
-on that side, the gap between columns they turn in (avoiding nodes), and a lane of their own
-in that gap, ordered so their runs do not cross; corners are cubic curves. Hovering or
-selecting a node or belt dims everything it is not connected to. `MoneyChart` (D3 area chart,
+speed, the last Auto run and the last hint. `layoutFloor` (`floor-layout.ts`) lays the floor
+out: suppliers, machines in columns by stage and the market. Belts are routed in four steps:
+the side of each node they leave or enter, a fanned-out port per belt on that side, the gap
+between columns they turn in (avoiding nodes), and a lane of their own in that gap, ordered so
+their runs do not cross. Each gap is only as wide as its lanes need: a belt that changes rows
+reserves one lane, in the least used gap it passes, so the floor stays compact. `FactoryLine3d` draws that layout in 3D with three.js as a toy
+factory hall (`hallModel` in `line-3d-models.ts`: concrete floor with aisle lines and a
+loading bay per truck, a back wall with a sign and a loading door, a street, a yard and trees
+outside): a truck and crates per supplier, a machine model per machine with a storage
+gauge, conveyors with rounded turns that bridge over the belts they cross, items riding the
+running belts, and a floating model of what each node makes. Drag to orbit, scroll to zoom,
+and drag from a supplier or machine to another node to lay a belt. Hovering or selecting a
+node or belt fades everything outside its chain: all it is made from, back to the trucks,
+and all it goes into, on to the market. Playback updates gauges, lamps and belts in place
+each hour; models are merged into a few draw calls per material, items are instanced, and
+shadows are drawn only when the floor changes. Each node also has a focusable button over
+it, named after it, for the keyboard and screen readers. `MoneyChart` (D3 area chart,
 also the hour scrubber), `ComparisonChart` (D3 bars against the best known profit and the
 bound) and `MachineTimeline` (D3 grid of machine status per hour) are the charts. The right
 panel has three tabs: Build (`FactoryInspector`), Auto (`FactoryAuto`) and Play
-(`FactoryPlay`). Edits are pure functions in `design-ops.ts`.
+(`FactoryPlay`), and folds away to a strip of tab buttons; selecting something on the floor
+opens it on Build. Icons are Lucide SVGs (`@ng-icons/lucide`); `icons.ts` maps each resource
+to one, used both in the panels and in the floor's labels. Edits are pure functions in `design-ops.ts`.
 
 ## Data flows
 
@@ -211,5 +224,5 @@ sequenceDiagram
 |---|---|
 | Engine | GoogleTest: Factory rules on a tiny level (pipeline timing, blocking, capacity, round-robin, demand tiers, error codes), every level's reference profits, factory solvers under the LP bound, hints that only ever raise profit; every rule violation, JSON errors, hand-made instances, property tests (1000 random instances × every solver vs brute force, deterministic seeds, game replay), bounds, timeline |
 | Server | Integration tests over real HTTP and WebSocket: solve, cancel, limits, 4xx errors, sessions, expiry, cap, streaming |
-| Web | Vitest component/unit tests (D3 canvas and charts, design edits, objectives, share links); Playwright E2E (factory edit/drag/test/playback, Auto runs, hints, score, timeline, share links, level switching; fails on console errors or 409s) |
+| Web | Vitest component/unit tests (floor layout, including that no two belts share a stretch on any level, charts, design edits, objectives, share links); Playwright E2E (factory edit/drag/test/playback, Auto runs, hints, score, timeline, share links, level switching, folding the panel; fails on console errors or 409s) |
 | CI | GCC and Clang `-Werror`, ASan + UBSan, TSan (server), clang-format, clang-tidy, ESLint, Prettier, benchmarks, `docker compose up` smoke test |

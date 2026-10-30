@@ -93,6 +93,9 @@ std::vector<std::string> checkLevel(const Level& level) {
   if (level.budget && (*level.budget < 0 || *level.budget > 1000 * limits::kMaxMoney)) {
     errors.emplace_back("budget out of range");
   }
+  if (level.storage && (*level.storage < 1 || *level.storage > limits::kMaxStorage)) {
+    errors.push_back("storage must be 1.." + std::to_string(limits::kMaxStorage));
+  }
   if (level.resources.empty() || level.resources.size() > limits::kMaxResources) {
     errors.push_back("resources: need 1.." + std::to_string(limits::kMaxResources));
   }

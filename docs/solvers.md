@@ -438,11 +438,12 @@ it is 2-3x the best designs found.
 | Level | Initial | `greedy` | `local_search` (3 s) | `flow_lp` | Bound |
 |---|---|---|---|---|---|
 | Easy: First Stitch | $8,100 | $49,900 | $58,100 | $58,100 | $158,755 |
-| Hard: Full Line | $106,700 | $155,700 | $160,900 | $115,000 | $397,845 |
+| Hard: Full Line | $106,700 | $155,700 | $171,100 | $142,450 | $397,845 |
+| Expert: Toy Empire | $41,000 | $253,325 | $410,700 | $354,475 | $1,047,104 |
 
 ### Factory hints
 
-`suggestChange` (`engine/src/factory/hint.cpp`, `POST /api/factory/hint`, the 💡 Play tab)
+`suggestChange` (`engine/src/factory/hint.cpp`, `POST /api/factory/hint`, the Play tab)
 tries every single change to the player's draft and returns the one that raises profit the
 most: one order up or down by 1 or 3, two orders by 1 together, a belt's split weight up or
 down, removing a belt, a new belt between any producer and consumer of a resource, removing a
