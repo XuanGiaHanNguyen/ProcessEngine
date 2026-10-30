@@ -31,3 +31,26 @@ if(PF_BUILD_BENCHMARKS)
     SYSTEM)
   FetchContent_MakeAvailable(benchmark)
 endif()
+
+if(PF_BUILD_SERVER)
+  # Crow (HTTP + WebSocket, header-only) on standalone Asio.
+  # SOURCE_SUBDIR points at a directory without a CMakeLists.txt, so MakeAvailable only
+  # downloads the sources; we wire up the include paths ourselves.
+  FetchContent_Declare(asio
+    GIT_REPOSITORY https://github.com/chriskohlhoff/asio.git
+    GIT_TAG asio-1-30-2
+    GIT_SHALLOW ON
+    SOURCE_SUBDIR do-not-configure)
+  FetchContent_Declare(crow
+    GIT_REPOSITORY https://github.com/CrowCpp/Crow.git
+    GIT_TAG v1.3.2
+    GIT_SHALLOW ON
+    SOURCE_SUBDIR do-not-configure)
+  FetchContent_MakeAvailable(asio crow)
+  find_package(Threads REQUIRED)
+  add_library(pf_crow INTERFACE)
+  target_include_directories(pf_crow SYSTEM INTERFACE
+    ${crow_SOURCE_DIR}/include ${asio_SOURCE_DIR}/asio/include)
+  target_compile_definitions(pf_crow INTERFACE ASIO_STANDALONE)
+  target_link_libraries(pf_crow INTERFACE Threads::Threads)
+endif()

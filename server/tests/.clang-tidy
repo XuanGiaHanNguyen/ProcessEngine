@@ -1,0 +1,9 @@
+---
+# Tests: gtest's ASSERT_* macros guard optionals in ways the analyzer cannot see.
+InheritParentConfig: true
+Checks: >
+  -bugprone-unchecked-optional-access,
+  -readability-use-anyofallof,
+  -performance-inefficient-vector-operation,
+  -cppcoreguidelines-avoid-magic-numbers,
+...
