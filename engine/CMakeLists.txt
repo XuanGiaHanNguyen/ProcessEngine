@@ -7,10 +7,13 @@ add_library(pf_engine
   src/registry.cpp
   src/rules.cpp
   src/solver.cpp
+  src/solvers/beam_search.cpp
   src/solvers/branch_and_bound.cpp
   src/solvers/brute_force.cpp
   src/solvers/dp.cpp
   src/solvers/greedy.cpp
+  src/solvers/lp_relaxation.cpp
+  src/solvers/simulated_annealing.cpp
   src/validator.cpp
   src/version.cpp)
 target_include_directories(pf_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

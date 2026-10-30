@@ -1,9 +1,12 @@
 #include "pf/registry.hpp"
 
+#include "pf/solvers/beam_search.hpp"
 #include "pf/solvers/branch_and_bound.hpp"
 #include "pf/solvers/brute_force.hpp"
 #include "pf/solvers/dp.hpp"
 #include "pf/solvers/greedy.hpp"
+#include "pf/solvers/lp_relaxation.hpp"
+#include "pf/solvers/simulated_annealing.hpp"
 
 #include <stdexcept>
 
@@ -67,6 +70,26 @@ SolverRegistry makeBuiltin() {
          {{"max_transpositions", "Cap on remembered fully-searched states.",
            static_cast<double>(BranchAndBoundSolver::kDefaultMaxTranspositions)}}},
         [] { return std::make_unique<BranchAndBoundSolver>(); });
+  r.add({"beam_search",
+         "Beam search over the event decision tree, scoring children by greedy rollouts.",
+         false,
+         {{"beam_width", "Children kept per level.", BeamSearchSolver::kDefaultWidth}}},
+        [] { return std::make_unique<BeamSearchSolver>(); });
+  r.add(
+      {"simulated_annealing",
+       "Simulated annealing with insert/remove/shift/change moves and rule-based repair.",
+       false,
+       {{"iterations", "Number of annealing steps.", SimulatedAnnealingSolver::kDefaultIterations},
+        {"initial_temperature", "Starting temperature (0 = 5% of the greedy earnings).", 0},
+        {"final_temperature_ratio", "Final temperature as a fraction of the initial one.",
+         SimulatedAnnealingSolver::kDefaultFinalRatio}}},
+      [] { return std::make_unique<SimulatedAnnealingSolver>(); });
+  r.add({"lp_relaxation",
+         "Solves the time-indexed LP relaxation (upper bound in stats.lp_bound) and rounds "
+         "its plan into a schedule.",
+         false,
+         {}},
+        [] { return std::make_unique<LPRelaxationSolver>(); });
   return r;
 }
 

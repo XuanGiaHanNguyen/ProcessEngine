@@ -16,6 +16,7 @@ SolveOptions fastOptions() {
   SolveOptions options;
   options.time_limit_ms = 2000;
   options.seed = 42;
+  options.params["iterations"] = 2000;  // simulated annealing: plenty for small instances
   return options;
 }
 
