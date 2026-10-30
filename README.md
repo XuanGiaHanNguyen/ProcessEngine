@@ -10,7 +10,12 @@ simulated annealing, LP relaxation) run side by side, and every result is re-che
 independent validator. In **Play mode** you schedule the factory yourself, tick by tick,
 then see how you rank against the algorithms.
 
-![Play mode: a manual game followed by the solver reveal](docs/images/play-mode.gif)
+**Factory mode** is a design game: build a toy factory on a D3-drawn floor (suppliers of
+cotton, string, plastic, rubber and wood; looms, sewing stations, woodshops, assembly
+benches; conveyor belts), test it over a simulated 24-hour day, step through it hour by hour,
+and compare your design with three optimizers and a proven upper bound.
+
+![Factory mode: build, test, step through the day, compare with the optimizers](docs/images/factory-mode.gif)
 
 ## Quick start
 
@@ -29,6 +34,18 @@ cd web && npm ci && npm start                         # UI on :4200, proxies /ap
 ```
 
 ## What you can do
+
+**Factory mode** (the landing page): five levels, from one stuffed-animal line to a
+four-toy factory on a budget. Click an empty slot to build a machine, a supplier to set
+its hourly order, a belt to change how a node splits its output; drag from one node to
+another to lay a belt. Every edit is checked by the server, with reasons ("s3 gets no
+Fabric"). **Test factory** runs the design through the engine's `FactorySim`, adds it to
+*Tested Factories*, and plays it back: machines show "1 of 2 hrs", "Blocked" or "Waiting",
+belts show what they carried each hour, and a money chart scrubs through the day.
+**Compare** runs the factory optimizers and adds their designs to the list. The rules are
+in [docs/factory-spec.md](docs/factory-spec.md).
+
+![Factory mode: test playback](docs/images/factory-mode.png)
 
 **Auto mode**: load a sample, generate a random instance, or edit one; run any set of
 solvers with a time limit; watch them converge live over a WebSocket; compare earnings,
@@ -62,6 +79,19 @@ Across generated instances (details and methodology in [docs/solvers.md](docs/so
 | `simulated_annealing` | local search with rule-based repair | 0.35% | 8.36% / 0 |
 | `lp_relaxation` | time-indexed LP (in-house simplex) + rounding | 0.02% | 1.37% / 3 |
 
+### Factory solvers
+
+`pf_factory --time-limit 3000 instances/factory/*.json` (details in
+[docs/solvers.md](docs/solvers.md#factory-solvers-factory-mode)):
+
+| Level | Initial design | `greedy` | `local_search` | `flow_lp` | Upper bound |
+|---|---|---|---|---|---|
+| First Stitch | $16.20 | $99.80 | $116.20 | $85.80 | $317.51 |
+| Up and Away | $67.80 | $184.40 | $184.40 | $105.20 | $389.46 |
+| Rock Band | $6.40 | $183.00 | $224.60 | $219.00 | $639.40 |
+| Full Line | $213.40 | $311.40 | $321.80 | $230.00 | $795.69 |
+| Tight Budget | $7.40 | $205.60 | $232.60 | $205.60 | $569.65 |
+
 ## Benchmarks
 
 Profiling showed the exact solvers spending more than half their time in `malloc`/`free`.
@@ -82,8 +112,8 @@ Apple M-series, Release, one thread. Full table and the profile: [docs/solvers.m
 
 ```mermaid
 flowchart LR
-  UI["Angular UI<br/>Auto · Play"] -- "REST + WebSocket" --> S["Crow server<br/>jobs (thread pool) · sessions"]
-  S --> E["C++20 engine<br/>SimState rules · validator · GameSession · 8 solvers"]
+  UI["Angular UI<br/>Factory · Auto · Play"] -- "REST + WebSocket" --> S["Crow server<br/>jobs (thread pool) · sessions"]
+  S --> E["C++20 engine<br/>SimState rules · validator · GameSession · 8 solvers<br/>FactorySim · 3 factory solvers"]
 ```
 
 The rules live in one class (`SimState`). The validator, Play-mode sessions, and the
@@ -112,17 +142,19 @@ npm run lint        # ESLint
 npm run e2e         # Playwright (starts ../build/server/pf_server and ng serve)
 ```
 
+Factory solvers on the bundled levels: `build/tools/pf_factory instances/factory/*.json`.
 Benchmarks: `cmake -B build-bench -DPF_BUILD_BENCHMARKS=ON -DPF_BUILD_TESTS=OFF && cmake --build build-bench -j && build-bench/engine/bench/pf_bench`.
 Solver comparison CLI: `build/tools/pf_compare --size medium --count 20`.
 
 ## Repository layout
 
 ```
-engine/     C++20 library: model, rules, validator, GameSession, solvers, generator (+ tests, benchmarks)
+engine/     C++20 library: model, rules, validator, GameSession, solvers, generator,
+            factory/ (FactorySim, factory solvers) (+ tests, benchmarks)
 server/     Crow HTTP/WebSocket server (+ integration tests)
-tools/      pf_compare: solver comparison CLI (CSV + summary table)
+tools/      pf_compare (solver comparison CLI) and pf_factory (factory solvers on levels)
 web/        Angular app (+ Vitest, Playwright)
-instances/  hand-made JSON instances
-docs/       architecture, API contract, solver write-ups, images
+instances/  hand-made JSON instances; instances/factory/ holds the Factory-mode levels
+docs/       architecture, API contract, solver write-ups, Factory rules, images
 docker/     Dockerfiles and nginx config
 ```

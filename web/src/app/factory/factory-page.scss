@@ -136,6 +136,21 @@ p {
   }
 }
 
+.tests-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  .link:disabled {
+    color: #9aa1b0;
+    cursor: default;
+  }
+}
+.bound {
+  font-size: 0.78rem;
+  color: #9aa1b0;
+  margin: 0 0 0.5rem;
+}
+
 .test-row {
   width: 100%;
   display: flex;

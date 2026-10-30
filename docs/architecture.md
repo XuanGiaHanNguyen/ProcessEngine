@@ -1,7 +1,7 @@
 # Architecture
 
-ProcessForge has three layers. Game rules live in exactly one place (the engine's
-`SimState`); everything else calls into it.
+ProcessForge has three layers. Game rules live in exactly one place per game (the engine's
+`SimState` for scheduling, `FactorySim` for Factory mode); everything else calls into it.
 
 ```mermaid
 flowchart LR
@@ -61,6 +61,10 @@ A plain C++20 static library with no I/O and no third-party dependencies
 | `solvers/*` | The algorithms (see `docs/solvers.md`) |
 | `bounds.hpp` | Admissible dual bound used by B&B and the LP solver |
 | `generator.hpp`, `random.hpp` | Seeded, platform-independent instance generator |
+| `factory/level.hpp` | Factory mode: `Level`, `Design`, `checkLevel`, `checkDesign` (spec error codes), warnings |
+| `factory/sim.hpp` — `simulate` | **The** implementation of the Factory rules (`docs/factory-spec.md`): five steps per hour, per-hour report |
+| `factory/solvers.hpp` | `FactorySolver` (non-virtual `solve()` re-simulates), `greedy`, `local_search`, `flow_lp`, `flowUpperBound` |
+| `factory/json.hpp` | Level and design parsing (in `pf_json`), report serialization |
 
 **Why the validator cannot be fooled.** `Solver::solve()` is non-virtual: it times the
 concrete `solveRaw()`, then validates the returned schedule and fills `Solution::earnings`
@@ -72,6 +76,10 @@ so a manual game and a solver schedule are scored by the same code; a property t
 use a compact copy of the rules for speed (`src/solvers/compact_state.hpp`); a cross-check
 test drives it and `SimState` side by side, and their output still goes through the
 validator.
+
+**Why Factory mode cannot be fooled either.** `FactorySolver::solve()` checks the design
+with `checkDesign` and takes the profit from `simulate()`. The UI never computes a
+score: tests, playback badges and objectives all come from the server's per-hour report.
 
 ## Server (`server/`)
 
@@ -85,6 +93,9 @@ A thin Crow wrapper (`pf_server_lib` + `pf_server`):
   (throttled), appended to the job and pushed to WebSocket subscribers.
 - **SessionStore**: `GameSession`s by random id, each with its own mutex; expiry after
   inactivity and a cap on live sessions; a background sweeper drops expired ones.
+- **Factory routes** serve the bundled levels (parsed at startup) and validate, simulate
+  and solve designs. Factory solves are short (at most 10 s) and run on the request,
+  one thread per solver.
 - Structured JSON logs (one line per request), CORS for local development, graceful
   shutdown (cancel running solves, join threads).
 
@@ -96,6 +107,13 @@ both modes; `SolveRun` wraps a job (submit, follow the WebSocket, refresh result
 and is reused for Auto-mode runs and the Play-mode reveal. Charts use Chart.js; the process
 graph and Gantt timeline are hand-drawn SVG. The frontend never re-implements rules: legal
 moves, disabled-button reasons, and chart timelines all come from the server.
+
+**Factory mode** (`web/src/app/factory/`): `FactoryStore` holds the level, the draft design
+(undo/redo, saved per level in localStorage), the server's check of it, and the tested
+factories with their playback hour. `FactoryCanvas` draws the floor with D3 (d3-zoom,
+d3-drag for laying belts, d3-shape belt links, d3-scale layout, D3 transitions for items
+on belts); `MoneyChart` is a D3 area chart that doubles as the hour scrubber. Edits are pure
+functions in `design-ops.ts`.
 
 ## Data flows
 
@@ -157,11 +175,34 @@ sequenceDiagram
   UI->>S: POST /redo (step through the replay)
 ```
 
+### Factory mode: edit, test, compare
+
+```mermaid
+sequenceDiagram
+  participant UI as Browser
+  participant S as Server
+  participant E as Engine
+  UI->>S: GET /api/factory/levels/{id}
+  loop every edit
+    UI->>S: POST /api/factory/validate {level, design}
+    S->>E: parseDesign + checkDesign + designWarnings
+    S-->>UI: {valid, errors, warnings, build}
+  end
+  UI->>S: POST /api/factory/simulate {level, design}
+  S->>E: simulate(level, design)
+  S-->>UI: {result: profit, hours[24]}
+  Note over UI: playback, money chart, objectives
+  UI->>S: POST /api/factory/solve {level, solvers}
+  S->>E: solvers in parallel + flowUpperBound
+  S-->>UI: {bound, results[design, profit]}
+  UI->>S: POST /api/factory/simulate (each solver design)
+```
+
 ## Testing and tooling
 
 | Layer | Tests |
 |---|---|
-| Engine | GoogleTest: every rule violation, JSON errors, hand-made instances, property tests (1000 random instances × every solver vs brute force, deterministic seeds, game replay), bounds, timeline |
+| Engine | GoogleTest: Factory rules on a tiny level (pipeline timing, blocking, capacity, round-robin, demand tiers, error codes), every level's reference profits, factory solvers under the LP bound; every rule violation, JSON errors, hand-made instances, property tests (1000 random instances × every solver vs brute force, deterministic seeds, game replay), bounds, timeline |
 | Server | Integration tests over real HTTP and WebSocket: solve, cancel, limits, 4xx errors, sessions, expiry, cap, streaming |
-| Web | Vitest component/unit tests; Playwright E2E (Auto flow, full manual playthrough, replay, share links; fails on console errors or 409s) |
+| Web | Vitest component/unit tests (D3 canvas, design edits, objectives); Playwright E2E (Factory edit/drag/test/playback/compare, Auto flow, full manual playthrough, replay, share links; fails on console errors or 409s) |
 | CI | GCC and Clang `-Werror`, ASan + UBSan, TSan (server), clang-format, clang-tidy, ESLint, Prettier, benchmarks, `docker compose up` smoke test |
