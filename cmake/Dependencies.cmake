@@ -19,3 +19,38 @@ if(PF_BUILD_TESTS)
   set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googletest)
 endif()
+
+if(PF_BUILD_BENCHMARKS)
+  set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+  set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+  set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "" FORCE)
+  FetchContent_Declare(benchmark
+    GIT_REPOSITORY https://github.com/google/benchmark.git
+    GIT_TAG v1.9.1
+    GIT_SHALLOW ON
+    SYSTEM)
+  FetchContent_MakeAvailable(benchmark)
+endif()
+
+if(PF_BUILD_SERVER)
+  # Crow (HTTP + WebSocket, header-only) on standalone Asio.
+  # SOURCE_SUBDIR points at a directory without a CMakeLists.txt, so MakeAvailable only
+  # downloads the sources; we wire up the include paths ourselves.
+  FetchContent_Declare(asio
+    GIT_REPOSITORY https://github.com/chriskohlhoff/asio.git
+    GIT_TAG asio-1-30-2
+    GIT_SHALLOW ON
+    SOURCE_SUBDIR do-not-configure)
+  FetchContent_Declare(crow
+    GIT_REPOSITORY https://github.com/CrowCpp/Crow.git
+    GIT_TAG v1.3.2
+    GIT_SHALLOW ON
+    SOURCE_SUBDIR do-not-configure)
+  FetchContent_MakeAvailable(asio crow)
+  find_package(Threads REQUIRED)
+  add_library(pf_crow INTERFACE)
+  target_include_directories(pf_crow SYSTEM INTERFACE
+    ${crow_SOURCE_DIR}/include ${asio_SOURCE_DIR}/asio/include)
+  target_compile_definitions(pf_crow INTERFACE ASIO_STANDALONE)
+  target_link_libraries(pf_crow INTERFACE Threads::Threads)
+endif()

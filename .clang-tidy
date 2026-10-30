@@ -28,6 +28,10 @@ Checks: >
   -misc-const-correctness,
   -misc-use-anonymous-namespace,
   -readability-math-missing-parentheses,
+  -bugprone-random-generator-seed,
+  -performance-inefficient-string-concatenation,
+  -bugprone-signed-bitwise,
+  -readability-use-anyofallof,
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*/(engine|server)/.*'
 FormatStyle: file

@@ -1,0 +1,172 @@
+@if (supplier(); as s) {
+  <section class="inspector" aria-label="Supplier">
+    <h3><ng-icon [svg]="iconFor(s.resource)" /> {{ resourceName(s.resource) }} supplier</h3>
+    <label class="field">
+      <span>Order per hour</span>
+      <span class="order-row">
+        <input
+          type="range"
+          min="0"
+          [max]="s.max_rate"
+          [value]="order()"
+          (change)="setOrder($any($event.target).value)"
+          aria-label="Order per hour"
+        />
+        <input
+          type="number"
+          min="0"
+          [max]="s.max_rate"
+          [value]="order()"
+          (change)="setOrder($any($event.target).value)"
+          aria-label="Order per hour (number)"
+        />
+      </span>
+    </label>
+    <dl>
+      <dt>Cost</dt>
+      <dd>{{ money(s.unit_cost) }} each · {{ money(s.unit_cost * order()) }} per hour</dd>
+      <dt>Max</dt>
+      <dd>{{ s.max_rate }} per hour</dd>
+    </dl>
+    <ng-container *ngTemplateOutlet="beltList" />
+  </section>
+} @else if (machine(); as m) {
+  <section class="inspector" aria-label="Machine">
+    <h3>
+      <ng-icon [svg]="outputIcon(m.recipe)" /> {{ m.type.name }}
+      <span class="slot-id">{{ m.slot }}</span>
+    </h3>
+    @if (m.type.recipes.length > 1) {
+      <label class="field">
+        <span>Recipe</span>
+        <select (change)="changeRecipe($any($event.target).value)" aria-label="Recipe">
+          @for (r of m.type.recipes; track r.id) {
+            <option [value]="r.id" [selected]="r.id === m.recipe.id">{{ r.name }}</option>
+          }
+        </select>
+      </label>
+    } @else {
+      <p class="sub">{{ m.recipe.name }}</p>
+    }
+    <div class="recipe">
+      <span>
+        @for (i of entries(m.recipe.inputs); track i.id) {
+          <span class="chip"
+            >{{ i.qty }} <ng-icon [svg]="iconFor(i.id)" /> {{ resourceName(i.id) }}</span
+          >
+        }
+      </span>
+      <span class="arrow" aria-label="makes">→</span>
+      <span>
+        @for (o of entries(m.recipe.outputs); track o.id) {
+          <span class="chip"
+            >{{ o.qty }} <ng-icon [svg]="iconFor(o.id)" /> {{ resourceName(o.id) }}</span
+          >
+        }
+      </span>
+    </div>
+    <dl>
+      <dt>Batch time</dt>
+      <dd>{{ m.recipe.hours }} hour{{ m.recipe.hours > 1 ? 's' : '' }}</dd>
+      <dt>Build cost</dt>
+      <dd>{{ money(m.type.cost) }}</dd>
+    </dl>
+    <ng-container *ngTemplateOutlet="beltList" />
+    <button type="button" class="danger" (click)="removeMachine()">
+      <ng-icon name="lucideTrash2" /> Remove machine
+    </button>
+  </section>
+} @else if (node() === 'market') {
+  <section class="inspector" aria-label="Market">
+    <h3><ng-icon [svg]="marketIcon" /> Market</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Toy</th>
+          <th>Price</th>
+          <th>Per hour</th>
+          <th>Then</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (l of store.level()?.market?.listings ?? []; track l.resource) {
+          <tr>
+            <td><ng-icon [svg]="iconFor(l.resource)" /> {{ resourceName(l.resource) }}</td>
+            <td>{{ money(l.price) }}</td>
+            <td>{{ l.demand }}</td>
+            <td>{{ money(l.overflow_price) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <p class="sub">
+      Each hour the first units of a toy sell at full price; the rest sell at the lower price.
+    </p>
+    <ng-container *ngTemplateOutlet="beltList" />
+  </section>
+} @else if (belt(); as b) {
+  <section class="inspector" aria-label="Belt">
+    <h3>Belt</h3>
+    <p><ng-icon [svg]="b.icon" /> {{ b.label }}</p>
+    <div class="weight-row">
+      <span>Split weight</span>
+      <button
+        type="button"
+        (click)="setWeight(b.index, (b.belt.weight ?? 1) - 1)"
+        aria-label="Lower weight"
+      >
+        <ng-icon name="lucideMinus" />
+      </button>
+      <strong aria-live="polite">{{ b.belt.weight ?? 1 }}</strong>
+      <button
+        type="button"
+        (click)="setWeight(b.index, (b.belt.weight ?? 1) + 1)"
+        aria-label="Raise weight"
+      >
+        <ng-icon name="lucidePlus" />
+      </button>
+    </div>
+    @if (split() !== null) {
+      <p class="sub">
+        This belt gets about {{ split() }}% of what its source sends of this resource.
+      </p>
+    } @else {
+      <p class="sub">Weights matter when a node sends the same resource on several belts.</p>
+    }
+    <button type="button" class="danger" (click)="removeBelt(b.index)">
+      <ng-icon name="lucideTrash2" /> Remove belt
+    </button>
+  </section>
+} @else {
+  <section aria-label="Objectives">
+    <h3>Objectives</h3>
+    <ng-content select="[objectives]" />
+    <p class="hint">
+      Click a supplier to set its order, a machine to change its recipe, or a belt to change its
+      split. Drag from a supplier or machine to another machine or the market to lay a belt.
+    </p>
+  </section>
+}
+
+<ng-template #beltList>
+  @if (nodeBelts().incoming.length || nodeBelts().outgoing.length) {
+    <h4>Belts</h4>
+    <ul class="belts">
+      @for (r of nodeBelts().incoming; track r.index) {
+        <li>
+          <button type="button" (click)="selectBelt(r.index)">
+            <ng-icon [svg]="r.icon" /> in · {{ r.label }}
+          </button>
+        </li>
+      }
+      @for (r of nodeBelts().outgoing; track r.index) {
+        <li>
+          <button type="button" (click)="selectBelt(r.index)">
+            <ng-icon [svg]="r.icon" /> out · {{ r.label
+            }}{{ (r.belt.weight ?? 1) > 1 ? ' ×' + r.belt.weight : '' }}
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</ng-template>

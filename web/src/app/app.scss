@@ -1,0 +1,33 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  z-index: 10;
+  &:focus {
+    left: 0.5rem;
+  }
+}
+
+main {
+  flex: 1;
+  padding: 1rem 1.25rem 2rem;
+  max-width: 1500px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  outline: none;
+  // The factory is a full-bleed floor.
+  &:has(> app-factory-page) {
+    padding: 0;
+    max-width: none;
+  }
+}

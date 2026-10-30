@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <random>
 #include <string>
 #include <utility>
 #include <vector>
@@ -55,5 +56,29 @@ class InstanceBuilder {
 
   Instance instance_;
 };
+
+/// A deliberately simple tiny-instance maker (2-4 resources, 1-4 processes, horizon <= 6),
+/// small enough for brute force. Milestone 3 adds the real generator.
+inline Instance tinyRandom(std::mt19937_64& rng) {
+  auto pick = [&](int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(rng); };
+  InstanceBuilder b;
+  const int resources = pick(2, 4);
+  for (int r = 0; r < resources; ++r) {
+    b.resource("r" + std::to_string(r), pick(0, 6), pick(0, 4));
+  }
+  const int processes = pick(1, 4);
+  for (int p = 0; p < processes; ++p) {
+    const int in = pick(0, resources - 1);
+    int out = pick(0, resources - 1);
+    if (out == in) out = (out + 1) % resources;
+    std::vector<std::pair<std::string, Quantity>> inputs;
+    if (pick(0, 4) != 0) inputs.emplace_back("r" + std::to_string(in), pick(1, 3));
+    std::optional<std::int32_t> max_runs;
+    if (pick(0, 3) == 0) max_runs = pick(0, 3);
+    b.process("p" + std::to_string(p), inputs, {{"r" + std::to_string(out), pick(1, 3)}},
+              pick(1, 3), max_runs);
+  }
+  return b.workers(pick(1, 2)).horizon(pick(1, 6)).build();
+}
 
 }  // namespace pf::test

@@ -1,7 +1,10 @@
 #include "pf/json_io.hpp"
 
+#include "pf/limits.hpp"
+
 #include <algorithm>
 #include <limits>
+#include <ranges>
 
 namespace pf::json {
 
@@ -158,7 +161,8 @@ void readProcesses(Reader& r, const json& j, Instance& instance) {
     }
     if (!item.contains("duration")) {
       r.error(path, "missing required field 'duration'");
-    } else if (auto d = r.integer<Tick>(item["duration"], path + ".duration", 1, kInt32Max)) {
+    } else if (auto d =
+                   r.integer<Tick>(item["duration"], path + ".duration", 1, limits::kMaxHorizon)) {
       p.duration = *d;
     }
     if (item.contains("max_runs") && !item["max_runs"].is_null()) {
@@ -206,12 +210,12 @@ ParseResult<Instance> parseInstance(const json& j) {
   }
   if (!j.contains("workers")) {
     r.error("", "missing required field 'workers'");
-  } else if (auto w = r.integer<std::int32_t>(j["workers"], "workers", 1, kInt32Max)) {
+  } else if (auto w = r.integer<std::int32_t>(j["workers"], "workers", 1, limits::kMaxWorkers)) {
     instance.workers = *w;
   }
   if (!j.contains("horizon")) {
     r.error("", "missing required field 'horizon'");
-  } else if (auto h = r.integer<Tick>(j["horizon"], "horizon", 0, kInt32Max)) {
+  } else if (auto h = r.integer<Tick>(j["horizon"], "horizon", 0, limits::kMaxHorizon)) {
     instance.horizon = *h;
   }
   if (j.contains("start_money")) {
@@ -362,6 +366,233 @@ json toJson(const ValidationReport& report, const Instance& instance) {
     out["violation"] = nullptr;
   }
   return out;
+}
+
+json toJson(const Solution& solution, const Instance& instance) {
+  json out = {{"runs", scheduleToJson(solution.runs, instance)},
+              {"earnings", solution.earnings},
+              {"proven_optimal", solution.proven_optimal},
+              {"runtime_ms", solution.runtime_ms},
+              {"solver_name", solution.solver_name},
+              {"stats", solution.stats},
+              {"valid", solution.valid}};
+  out["error"] = solution.error ? json(*solution.error) : json(nullptr);
+  return out;
+}
+
+json toJson(const Action& action, const Instance& instance) {
+  json out = {{"type", toString(action.type)}};
+  if (action.type == Action::Type::StartRun) {
+    out["process_id"] = action.process < instance.processes.size()
+                            ? json(instance.processes[action.process].id)
+                            : json(nullptr);
+  }
+  if (action.type == Action::Type::AdvanceTo) out["tick"] = action.tick;
+  return out;
+}
+
+ParseResult<Action> parseAction(const json& j, const Instance& instance) {
+  Reader r;
+  ParseResult<Action> result;
+  if (!r.object(j, "", {"type", "process_id", "processId", "tick"})) {
+    result.errors = std::move(r.errors());
+    return result;
+  }
+  const std::optional<std::string> type =
+      j.contains("type") ? r.string(j["type"], "type") : std::nullopt;
+  if (!j.contains("type")) r.error("", "missing required field 'type'");
+  Action action;
+  if (type == "start_run") {
+    // Accept both snake_case (engine) and camelCase (API body) spellings.
+    const char* key = j.contains("process_id") ? "process_id" : "processId";
+    if (!j.contains(key)) {
+      r.error("", "start_run requires 'process_id'");
+    } else if (auto id = r.string(j[key], key)) {
+      if (auto p = instance.findProcess(*id)) {
+        action = Action::startRun(*p);
+      } else {
+        r.error(key, "unknown process '" + *id + "'");
+      }
+    }
+  } else if (type == "wait") {
+    action = Action::wait();
+  } else if (type == "advance_to") {
+    if (!j.contains("tick")) {
+      r.error("", "advance_to requires 'tick'");
+    } else if (auto t = r.integer<Tick>(j["tick"], "tick", 0, kInt32Max)) {
+      action = Action::advanceTo(*t);
+    }
+  } else if (type == "finish") {
+    action = Action::finish();
+  } else if (type) {
+    r.error("type",
+            "unknown action type '" + *type + "' (expected start_run, wait, advance_to or finish)");
+  }
+  result.errors = std::move(r.errors());
+  if (result.errors.empty()) result.value = action;
+  return result;
+}
+
+json toJson(const SessionState& state, const Instance& instance) {
+  json inventory = json::object();
+  for (std::size_t i = 0; i < state.inventory.size(); ++i) {
+    inventory[instance.resources[i].id] = state.inventory[i];
+  }
+  json runs = json::array();
+  for (const RunInProgress& run : state.runs_in_progress) {
+    runs.push_back({{"process_id", instance.processes[run.process].id},
+                    {"start", run.start},
+                    {"end", run.end},
+                    {"remaining", run.remaining}});
+  }
+  json counts = json::object();
+  for (std::size_t p = 0; p < state.run_counts.size(); ++p) {
+    counts[instance.processes[p].id] = state.run_counts[p];
+  }
+  json history = json::array();
+  for (const Action& a : state.history) history.push_back(toJson(a, instance));
+  return {{"tick", state.tick},
+          {"horizon", state.horizon},
+          {"inventory", std::move(inventory)},
+          {"money", state.money},
+          {"projected_earnings", state.projected_earnings},
+          {"runs_in_progress", std::move(runs)},
+          {"free_workers", state.free_workers},
+          {"workers", instance.workers},
+          {"run_counts", std::move(counts)},
+          {"history", std::move(history)},
+          {"redo_available", state.redo_available},
+          {"finished", state.finished}};
+}
+
+json sessionToJson(const GameSession& session) {
+  const Instance& instance = session.instance();
+  json history = json::array();
+  for (const Action& a : session.history()) history.push_back(toJson(a, instance));
+  json redo = json::array();  // next action to redo first
+  for (const Action& a : std::views::reverse(session.redoStack())) {
+    redo.push_back(toJson(a, instance));
+  }
+  return {
+      {"instance", toJson(instance)}, {"history", std::move(history)}, {"redo", std::move(redo)}};
+}
+
+ParseResult<GameSession> parseSession(const json& j) {
+  ParseResult<GameSession> result;
+  if (!j.is_object() || !j.contains("instance")) {
+    result.errors.emplace_back("expected an object with an 'instance' field");
+    return result;
+  }
+  auto instance = parseInstance(j["instance"]);
+  if (!instance.value) {
+    for (const std::string& e : instance.errors) result.errors.push_back("instance: " + e);
+    return result;
+  }
+  GameSession session(std::move(*instance.value));
+
+  // Replay history, then the redo list, then undo the redo part to restore it.
+  std::size_t redo_count = 0;
+  for (const char* field : {"history", "redo"}) {
+    if (!j.contains(field)) continue;
+    const json& actions = j[field];
+    if (!actions.is_array()) {
+      result.errors.push_back(std::string(field) + ": expected an array");
+      return result;
+    }
+    for (std::size_t i = 0; i < actions.size(); ++i) {
+      const std::string path = std::string(field) + "[" + std::to_string(i) + "]";
+      auto action = parseAction(actions[i], session.instance());
+      if (!action.value) {
+        for (const std::string& e : action.errors) result.errors.push_back(path + ": " + e);
+        return result;
+      }
+      if (auto error = session.apply(*action.value)) {
+        result.errors.push_back(path + ": illegal action: " + error->message);
+        return result;
+      }
+    }
+    if (std::string_view(field) == "redo") redo_count = actions.size();
+  }
+  for (std::size_t i = 0; i < redo_count; ++i) (void)session.undo();
+  result.value = std::move(session);
+  return result;
+}
+
+json toJson(const Timeline& timeline, const Instance& instance) {
+  json runs = json::array();
+  for (const TimelineRun& r : timeline.runs) {
+    runs.push_back({{"run_index", r.run_index},
+                    {"process_id", instance.processes[r.process].id},
+                    {"start", r.start},
+                    {"end", r.end},
+                    {"slot", r.slot}});
+  }
+  json points = json::array();
+  for (const TimelinePoint& p : timeline.points) {
+    json inventory = json::object();
+    for (std::size_t i = 0; i < p.inventory.size(); ++i) {
+      inventory[instance.resources[i].id] = p.inventory[i];
+    }
+    points.push_back({{"tick", p.tick},
+                      {"inventory", std::move(inventory)},
+                      {"busy_workers", p.busy_workers},
+                      {"value", p.value}});
+  }
+  return {
+      {"earnings", timeline.earnings}, {"runs", std::move(runs)}, {"points", std::move(points)}};
+}
+
+ParseResult<GeneratorParams> parseGeneratorParams(const json& j) {
+  Reader r;
+  ParseResult<GeneratorParams> result;
+  if (!r.object(j, "",
+                {"size", "seed", "resources", "processes", "chain_depth", "workers", "horizon",
+                 "min_price", "max_price", "max_qty", "max_duration"})) {
+    result.errors = std::move(r.errors());
+    return result;
+  }
+  std::uint64_t seed = 1;
+  if (j.contains("seed")) {
+    if (auto s = r.integer<std::int64_t>(j["seed"], "seed", 0,
+                                         std::numeric_limits<std::int64_t>::max())) {
+      seed = static_cast<std::uint64_t>(*s);
+    }
+  }
+  GeneratorParams params;
+  params.seed = seed;
+  if (j.contains("size")) {
+    const auto size = r.string(j["size"], "size");
+    if (size == "small") {
+      params = GeneratorParams::small(seed);
+    } else if (size == "medium") {
+      params = GeneratorParams::medium(seed);
+    } else if (size == "large") {
+      params = GeneratorParams::large(seed);
+    } else if (size) {
+      r.error("size", "expected small, medium or large");
+    }
+  }
+  const auto read32 = [&](const char* key, std::int32_t lo, std::int32_t hi, std::int32_t& out) {
+    if (!j.contains(key)) return;
+    if (auto v = r.integer<std::int32_t>(j[key], key, lo, hi)) out = *v;
+  };
+  read32("resources", 1, 200, params.resources);
+  read32("processes", 1, 500, params.processes);
+  read32("chain_depth", 1, 20, params.chain_depth);
+  read32("workers", 1, 100, params.workers);
+  read32("horizon", 1, 10'000, params.horizon);
+  read32("max_duration", 1, 1'000, params.max_duration);
+  const auto read64 = [&](const char* key, Quantity lo, Quantity hi, Quantity& out) {
+    if (!j.contains(key)) return;
+    if (auto v = r.integer<Quantity>(j[key], key, lo, hi)) out = *v;
+  };
+  read64("min_price", 0, 10'000, params.min_price);
+  read64("max_price", 0, 10'000, params.max_price);
+  read64("max_qty", 1, 1'000, params.max_qty);
+  if (params.min_price > params.max_price) r.error("min_price", "must be <= max_price");
+  result.errors = std::move(r.errors());
+  if (result.errors.empty()) result.value = params;
+  return result;
 }
 
 }  // namespace pf::json
