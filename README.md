@@ -1,20 +1,17 @@
-# ProcessEngine
+# [ProcessEngine](https://processengine.onrender.com)
 
-**A production-process optimizer with a C++20 engine, a Crow HTTP/WebSocket server, and an
-Angular UI.** Given resources, recipes ("processes") that turn inputs into outputs over
-time, a starting inventory, a limited number of workers, and a time horizon, find the
-schedule that ends with the most valuable inventory.
+**Play it: [processengine.onrender.com](https://processengine.onrender.com)** (the free server
+may take a minute to wake up on the first visit).
 
-Eight solvers (two greedy variants, exhaustive, dynamic programming, branch and bound, beam search,
-simulated annealing, LP relaxation) run side by side, and every result is re-checked by an
-independent validator. They are available from the `pf_compare` CLI and the REST/WebSocket
-API.
+A toy factory game backed by a production optimizer: a C++20 engine, a Crow HTTP/WebSocket
+server and an Angular UI.
 
-The web app is a **toy factory** design game: build a factory on a cartoony 3D floor
-(supplier trucks of cotton, string, plastic, rubber, wood and paint; looms, sewing stations,
-woodshops, presses, assembly benches and toy labs; conveyor belts), test it over a simulated
-24-hour day, step through it hour by hour, let three optimizers build it for you (**Auto**),
-and get hints, a score and a share link (**Play**), all on one screen.
+- **The game:** build a factory on a cartoony 3D floor, test it over a 24-hour day, let three
+  optimizers build it for you (**Auto**), and get hints, a score and a share link (**Play**).
+- **The engine:** given recipes that turn inputs into outputs over time, workers and a time
+  horizon, it finds the schedule that ends with the most valuable inventory. Eight solvers run
+  side by side, each result re-checked by an independent validator, from the `pf_compare` CLI
+  or the REST/WebSocket API.
 
 ![Factory mode: build, test, step through the day, compare with the optimizers](docs/images/factory-mode.gif)
 
