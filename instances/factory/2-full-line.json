@@ -6,6 +6,7 @@
   "hours": 24,
   "belt_capacity": 10,
   "buffer_batches": 2,
+  "storage": 100,
   "budget": null,
   "resources": [
     {"id": "cotton", "name": "Cotton", "kind": "raw"},
@@ -265,50 +266,47 @@
       "name": "Best known",
       "design": {
         "belts": [
-          {"from": "cotton-supply", "resource": "cotton", "to": "s3", "weight": 1},
-          {"from": "cotton-supply", "resource": "cotton", "to": "s4", "weight": 1},
-          {"from": "string-supply", "resource": "string", "to": "s3", "weight": 1},
-          {"from": "string-supply", "resource": "string", "to": "s7", "weight": 1},
+          {"from": "cotton-supply", "resource": "cotton", "to": "s5", "weight": 1},
+          {"from": "cotton-supply", "resource": "cotton", "to": "s6", "weight": 1},
+          {"from": "string-supply", "resource": "string", "to": "s5", "weight": 1},
           {"from": "string-supply", "resource": "string", "to": "s8", "weight": 1},
           {"from": "string-supply", "resource": "string", "to": "s9", "weight": 1},
           {"from": "string-supply", "resource": "string", "to": "s10", "weight": 1},
           {"from": "plastic-supply", "resource": "plastic", "to": "s2", "weight": 1},
-          {"from": "plastic-supply", "resource": "plastic", "to": "s6", "weight": 1},
-          {"from": "rubber-supply", "resource": "rubber", "to": "s6", "weight": 1},
+          {"from": "plastic-supply", "resource": "plastic", "to": "s3", "weight": 1},
+          {"from": "plastic-supply", "resource": "plastic", "to": "s4", "weight": 1},
+          {"from": "rubber-supply", "resource": "rubber", "to": "s4", "weight": 1},
           {"from": "wood-supply", "resource": "wood", "to": "s1", "weight": 1},
-          {"from": "wood-supply", "resource": "wood", "to": "s5", "weight": 1},
-          {"from": "s3", "resource": "fabric", "to": "s7", "weight": 1},
-          {"from": "s3", "resource": "fabric", "to": "s8", "weight": 1},
-          {"from": "s4", "resource": "stuffing", "to": "s7", "weight": 1},
-          {"from": "s4", "resource": "stuffing", "to": "s8", "weight": 1},
-          {"from": "s1", "resource": "guitar-body", "to": "s9", "weight": 1},
-          {"from": "s1", "resource": "guitar-body", "to": "s10", "weight": 1},
-          {"from": "s5", "resource": "guitar-body", "to": "s9", "weight": 1},
-          {"from": "s5", "resource": "guitar-body", "to": "s10", "weight": 1},
+          {"from": "wood-supply", "resource": "wood", "to": "s2", "weight": 1},
+          {"from": "s5", "resource": "fabric", "to": "s9", "weight": 1},
+          {"from": "s5", "resource": "fabric", "to": "s10", "weight": 1},
+          {"from": "s6", "resource": "stuffing", "to": "s9", "weight": 1},
+          {"from": "s6", "resource": "stuffing", "to": "s10", "weight": 1},
+          {"from": "s1", "resource": "guitar-body", "to": "s8", "weight": 1},
           {"from": "s1", "resource": "offcut", "to": "market", "weight": 1},
-          {"from": "s5", "resource": "offcut", "to": "market", "weight": 1},
-          {"from": "s2", "resource": "pegs", "to": "s9", "weight": 1},
-          {"from": "s2", "resource": "pegs", "to": "s10", "weight": 1},
-          {"from": "s7", "resource": "stuffed-animal", "to": "market", "weight": 1},
-          {"from": "s8", "resource": "stuffed-animal", "to": "market", "weight": 1},
-          {"from": "s9", "resource": "toy-guitar", "to": "market", "weight": 1},
-          {"from": "s10", "resource": "toy-guitar", "to": "market", "weight": 1}
+          {"from": "s3", "resource": "pegs", "to": "s8", "weight": 1},
+          {"from": "s4", "resource": "wheels", "to": "s7", "weight": 1},
+          {"from": "s2", "resource": "chassis", "to": "s7", "weight": 1},
+          {"from": "s9", "resource": "stuffed-animal", "to": "market", "weight": 1},
+          {"from": "s10", "resource": "stuffed-animal", "to": "market", "weight": 1},
+          {"from": "s8", "resource": "toy-guitar", "to": "market", "weight": 1},
+          {"from": "s7", "resource": "toy-car", "to": "market", "weight": 1}
         ],
         "machines": [
           {"recipe": "guitar-body", "slot": "s1", "type": "woodshop"},
-          {"recipe": "pegs", "slot": "s2", "type": "molder"},
-          {"recipe": "fabric", "slot": "s3", "type": "loom"},
-          {"recipe": "stuffing", "slot": "s4", "type": "carder"},
-          {"recipe": "guitar-body", "slot": "s5", "type": "woodshop"},
-          {"recipe": "wheels", "slot": "s6", "type": "press"},
-          {"recipe": "stuffed-animal", "slot": "s7", "type": "sewing"},
-          {"recipe": "stuffed-animal", "slot": "s8", "type": "sewing"},
-          {"recipe": "toy-guitar", "slot": "s9", "type": "assembly"},
-          {"recipe": "toy-guitar", "slot": "s10", "type": "assembly"}
+          {"recipe": "chassis", "slot": "s2", "type": "workbench"},
+          {"recipe": "pegs", "slot": "s3", "type": "molder"},
+          {"recipe": "wheels", "slot": "s4", "type": "press"},
+          {"recipe": "fabric", "slot": "s5", "type": "loom"},
+          {"recipe": "stuffing", "slot": "s6", "type": "carder"},
+          {"recipe": "toy-car", "slot": "s7", "type": "assembly"},
+          {"recipe": "toy-guitar", "slot": "s8", "type": "assembly"},
+          {"recipe": "stuffed-animal", "slot": "s9", "type": "sewing"},
+          {"recipe": "stuffed-animal", "slot": "s10", "type": "sewing"}
         ],
-        "orders": {"cotton-supply": 8, "plastic-supply": 1, "string-supply": 9, "wood-supply": 3}
+        "orders": {"cotton-supply": 14, "plastic-supply": 5, "rubber-supply": 2, "string-supply": 24, "wood-supply": 5}
       },
-      "profit": 16580000
+      "profit": 17172500
     }
   ]
 }

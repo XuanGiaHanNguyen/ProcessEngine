@@ -2,14 +2,14 @@
   <p class="load-error" role="alert">{{ err }}</p>
 }
 <div class="stage">
-  <app-factory-canvas
+  <app-factory-line-3d
     class="canvas"
     [level]="store.level()"
     [design]="shownDesign()"
-    [selection]="asCanvasSelection()"
+    [selection]="asFloorSelection()"
     [editable]="!store.viewedTest()"
     [report]="store.currentHour()"
-    [insets]="[324, 314]"
+    [insets]="[324, collapsed() ? 76 : 314]"
     (nodeSelected)="selectNode($event)"
     (beltSelected)="selectBelt($event)"
     (connect)="store.connect($event.from, $event.to)"
@@ -18,7 +18,9 @@
   @if (store.message(); as msg) {
     <div class="toast" role="status">
       {{ msg }}
-      <button type="button" (click)="store.message.set(null)" aria-label="Dismiss">×</button>
+      <button type="button" (click)="store.message.set(null)" aria-label="Dismiss">
+        <ng-icon name="lucideX" />
+      </button>
     </div>
   }
 
@@ -57,10 +59,14 @@
         <button
           type="button"
           class="link"
-          (click)="panel.set('auto')"
+          (click)="openPanel('auto')"
           title="Let the optimizers build this factory and compare them with yours"
         >
-          {{ store.comparing() ? 'Solving…' : '🤖 Auto' }}
+          @if (store.comparing()) {
+            Solving…
+          } @else {
+            <ng-icon name="lucideBot" /> Auto
+          }
         </button>
       </div>
       @if (store.bound(); as bound) {
@@ -76,7 +82,12 @@
               [attr.aria-pressed]="store.viewing() === t.id"
               (click)="store.view(t.id)"
             >
-              <span>{{ t.kind === 'solver' ? '🤖 ' : '' }}{{ t.name }}</span>
+              <span>
+                @if (t.kind === 'solver') {
+                  <ng-icon name="lucideBot" />
+                }
+                {{ t.name }}</span
+              >
               <span class="amount" [class.neg]="t.result.profit < 0">{{
                 money(t.result.profit)
               }}</span>
@@ -96,22 +107,28 @@
                 />
                 <p class="sold-line">
                   @for (s of soldSoFar(); track s.id) {
-                    <span>{{ s.icon }} {{ s.qty }}</span>
+                    <span><ng-icon [svg]="s.icon" /> {{ s.qty }}</span>
                   } @empty {
                     <span>Nothing sold yet</span>
                   }
                 </p>
                 <div class="transport">
                   <button type="button" (click)="store.stepBy(-999)" aria-label="First hour">
-                    ⏮ First
+                    <ng-icon name="lucideSkipBack" /> First
                   </button>
                   <button type="button" (click)="store.stepBy(-1)" aria-label="Previous hour">
-                    ◀
+                    <ng-icon name="lucideChevronLeft" />
                   </button>
                   <button type="button" class="play" (click)="store.togglePlay()">
-                    {{ store.playing() ? '⏸ Pause' : '▶ Play' }}
+                    @if (store.playing()) {
+                      <ng-icon name="lucidePause" /> Pause
+                    } @else {
+                      <ng-icon name="lucidePlay" /> Play
+                    }
                   </button>
-                  <button type="button" (click)="store.stepBy(1)" aria-label="Next hour">▶|</button>
+                  <button type="button" (click)="store.stepBy(1)" aria-label="Next hour">
+                    <ng-icon name="lucideChevronRight" />
+                  </button>
                 </div>
                 <div class="speed" role="group" aria-label="Playback speed">
                   @for (s of [1, 2, 4]; track s) {
@@ -126,7 +143,7 @@
                   }
                 </div>
                 <button type="button" class="wide" (click)="store.editFrom(t.id)">
-                  Edit from {{ t.name }}
+                  <ng-icon name="lucidePencil" /> Edit from {{ t.name }}
                 </button>
               </div>
             }
@@ -148,7 +165,7 @@
               [disabled]="!store.canUndo()"
               aria-label="Undo"
             >
-              ↶
+              <ng-icon name="lucideUndo2" />
             </button>
             <button
               type="button"
@@ -156,10 +173,10 @@
               [disabled]="!store.canRedo()"
               aria-label="Redo"
             >
-              ↷
+              <ng-icon name="lucideRedo2" />
             </button>
             <button type="button" (click)="resetDraft()" aria-label="Reset to the initial factory">
-              ⟲
+              <ng-icon name="lucideRotateCcw" />
             </button>
           </div>
         }
@@ -174,7 +191,9 @@
         @if (store.check(); as check) {
           @if (!check.valid) {
             <p class="status bad">
-              ✗ Fix {{ check.errors.length }} problem{{ check.errors.length > 1 ? 's' : '' }}
+              <ng-icon name="lucideCircleAlert" /> Fix {{ check.errors.length }} problem{{
+                check.errors.length > 1 ? 's' : ''
+              }}
             </p>
             <ul class="issues bad">
               @for (e of check.errors; track $index) {
@@ -197,41 +216,90 @@
         (click)="store.runTest()"
         [disabled]="!store.check()?.valid || store.testing()"
       >
-        {{ store.testing() ? 'Testing…' : '▶ Test factory' }}
+        @if (store.testing()) {
+          Testing…
+        } @else {
+          <ng-icon name="lucidePlay" /> Test factory
+        }
       </button>
     </section>
   </aside>
 
-  <aside class="right panel purple" aria-label="Inspector, Auto and Play">
-    <div class="panel-tabs" role="tablist" aria-label="Panel">
+  @if (collapsed()) {
+    <nav class="right-rail panel" aria-label="Inspector, Auto and Play">
+      <button
+        type="button"
+        class="fold"
+        (click)="collapsed.set(false)"
+        aria-label="Show panel"
+        title="Show panel"
+      >
+        <ng-icon name="lucidePanelRightOpen" />
+      </button>
       @for (t of panels; track t.id) {
         <button
           type="button"
-          role="tab"
-          [attr.aria-selected]="panel() === t.id"
           [class.active]="panel() === t.id"
-          (click)="panel.set(t.id)"
+          (click)="openPanel(t.id)"
+          [attr.aria-label]="t.label"
+          [title]="t.label"
         >
-          {{ t.label }}
+          <ng-icon [name]="t.icon" />
         </button>
       }
+    </nav>
+  }
+  <aside class="right panel" [hidden]="collapsed()" aria-label="Inspector, Auto and Play">
+    <div class="right-head">
+      <div class="panel-tabs" role="tablist" aria-label="Panel">
+        @for (t of panels; track t.id) {
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="panel() === t.id"
+            [class.active]="panel() === t.id"
+            (click)="panel.set(t.id)"
+          >
+            <ng-icon [name]="t.icon" /> {{ t.label }}
+          </button>
+        }
+      </div>
+      <button
+        type="button"
+        class="fold"
+        (click)="collapsed.set(true)"
+        aria-label="Hide panel"
+        title="Hide panel"
+      >
+        <ng-icon name="lucidePanelRightClose" />
+      </button>
     </div>
     @switch (panel()) {
       @case ('auto') {
         <app-factory-auto />
       }
       @case ('play') {
-        <app-factory-play (openAuto)="panel.set('auto')" />
+        <app-factory-play (openAuto)="openPanel('auto')" />
       }
       @default {
         @if (store.viewedTest(); as t) {
           <section aria-label="Test details">
             @if (inspectedHour(); as m) {
-              <h3>{{ m.title }}</h3>
+              <h3>
+                @if (m.icon) {
+                  <ng-icon [svg]="m.icon" />
+                }
+                {{ m.title }}
+              </h3>
               <p class="hour-status {{ m.status }}">{{ m.statusText }}</p>
               <dl>
                 @for (b of m.buffers; track b.label) {
-                  <dt>{{ b.label }}</dt>
+                  <dt>
+                    @if (b.icon) {
+                      <ng-icon [svg]="b.icon" />
+                    }
+                    {{ b.label }}
+                  </dt>
                   <dd>{{ b.value }}</dd>
                 }
               </dl>
@@ -266,7 +334,11 @@
   <ul class="objectives">
     @for (o of store.objectives(); track o.text) {
       <li [class.met]="o.met">
-        <span class="check" aria-hidden="true">{{ o.met ? '✓' : '' }}</span>
+        <span class="check" aria-hidden="true">
+          @if (o.met) {
+            <ng-icon name="lucideCheck" />
+          }
+        </span>
         <span
           >{{ o.text }}<span class="visually-hidden">{{ o.met ? ' (done)' : '' }}</span></span
         >

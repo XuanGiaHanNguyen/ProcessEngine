@@ -103,6 +103,7 @@ SimResult simulate(const Level& level, const Design& design, bool with_report) {
   std::vector<int> transit(n_belts, 0);
   std::vector<int> sent(n_belts, 0);
   std::vector<Qty> sold_h(n_res, 0);
+  std::vector<Qty> delivered(n_sup, 0);
   std::vector<std::vector<Qty>> incoming(n_mach, std::vector<Qty>(n_res, 0));
   std::vector<MachineHour> status(n_mach);
   std::vector<Index> eligible;
@@ -173,12 +174,42 @@ SimResult simulate(const Level& level, const Design& design, bool with_report) {
       st.batches_done = ms.batches_done;
     }
 
-    // 4. Deliver.
+    // 4. Deliver. With a warehouse, deliveries share its room: one unit per supplier in
+    // turn (level order) until it is full. What does not fit is not delivered or paid for.
+    for (Index s = 0; s < n_sup; ++s) delivered[s] = design.orders[s];
+    if (level.storage) {
+      Qty room = *level.storage;
+      for (Index s = 0; s < n_sup; ++s) room -= out[s][level.suppliers[s].resource];
+      std::fill(delivered.begin(), delivered.end(), 0);
+      // Whole rounds at once, then a last partial round in supplier order.
+      while (room > 0) {
+        Qty active = 0;
+        Qty step = 0;
+        for (Index s = 0; s < n_sup; ++s) {
+          const Qty left = design.orders[s] - delivered[s];
+          if (left == 0) continue;
+          step = active == 0 ? left : std::min(step, left);
+          ++active;
+        }
+        if (active == 0) break;
+        const Qty rounds = std::min(step, room / active);
+        for (Index s = 0; s < n_sup; ++s) {
+          if (delivered[s] == design.orders[s]) continue;
+          if (rounds > 0) {
+            delivered[s] += rounds;
+            room -= rounds;
+          } else if (room > 0) {
+            ++delivered[s];
+            --room;
+          }
+        }
+        if (rounds == 0) break;
+      }
+    }
     Cents purchases = 0;
     for (Index s = 0; s < n_sup; ++s) {
-      const int q = design.orders[s];
-      out[s][level.suppliers[s].resource] += q;
-      purchases += static_cast<Cents>(q) * level.suppliers[s].unit_cost;
+      out[s][level.suppliers[s].resource] += delivered[s];
+      purchases += delivered[s] * level.suppliers[s].unit_cost;
     }
 
     // 5. Dispatch, by smooth weighted round-robin over the belts that can take a unit.
@@ -229,6 +260,7 @@ SimResult simulate(const Level& level, const Design& design, bool with_report) {
       rep.belt_moved = sent;
       rep.stock.resize(n_sup);
       for (Index s = 0; s < n_sup; ++s) rep.stock[s] = out[s][level.suppliers[s].resource];
+      rep.delivered = delivered;
       rep.machines = status;
       for (Index m = 0; m < n_mach; ++m) {
         MachineHour& mh = rep.machines[m];

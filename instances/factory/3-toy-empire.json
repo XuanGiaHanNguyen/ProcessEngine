@@ -1,0 +1,561 @@
+{
+  "format": "processforge-factory/1",
+  "id": "toy-empire",
+  "name": "Toy Empire",
+  "description": "Six ingredients, six toys, and motors made from scratch. Plan the whole chain.",
+  "hours": 24,
+  "belt_capacity": 10,
+  "buffer_batches": 2,
+  "storage": 160,
+  "budget": null,
+  "resources": [
+    { "id": "cotton", "name": "Cotton", "kind": "raw" },
+    { "id": "string", "name": "String", "kind": "raw" },
+    { "id": "plastic", "name": "Plastic", "kind": "raw" },
+    { "id": "rubber", "name": "Rubber", "kind": "raw" },
+    { "id": "wood", "name": "Wood", "kind": "raw" },
+    { "id": "paint", "name": "Paint", "kind": "raw" },
+    { "id": "fabric", "name": "Fabric", "kind": "part" },
+    { "id": "stuffing", "name": "Stuffing", "kind": "part" },
+    { "id": "guitar-body", "name": "Guitar body", "kind": "part" },
+    { "id": "painted-body", "name": "Painted body", "kind": "part" },
+    { "id": "offcut", "name": "Wood offcut", "kind": "part" },
+    { "id": "dowel", "name": "Dowel", "kind": "part" },
+    { "id": "pegs", "name": "Tuning pegs", "kind": "part" },
+    { "id": "wheels", "name": "Wheels", "kind": "part" },
+    { "id": "chassis", "name": "Chassis", "kind": "part" },
+    { "id": "gears", "name": "Gears", "kind": "part" },
+    { "id": "motor", "name": "Wind-up motor", "kind": "part" },
+    { "id": "stuffed-animal", "name": "Stuffed animal", "kind": "product" },
+    { "id": "toy-guitar", "name": "Toy guitar", "kind": "product" },
+    { "id": "toy-car", "name": "Toy car", "kind": "product" },
+    { "id": "kite", "name": "Kite", "kind": "product" },
+    { "id": "robot", "name": "Wind-up robot", "kind": "product" },
+    { "id": "racer", "name": "RC racer", "kind": "product" }
+  ],
+  "suppliers": [
+    {
+      "id": "cotton-supply",
+      "resource": "cotton",
+      "max_rate": 40,
+      "unit_cost": 20000,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "string-supply",
+      "resource": "string",
+      "max_rate": 30,
+      "unit_cost": 12500,
+      "x": 0,
+      "y": 2
+    },
+    {
+      "id": "plastic-supply",
+      "resource": "plastic",
+      "max_rate": 24,
+      "unit_cost": 25000,
+      "x": 0,
+      "y": 4
+    },
+    {
+      "id": "rubber-supply",
+      "resource": "rubber",
+      "max_rate": 16,
+      "unit_cost": 30000,
+      "x": 0,
+      "y": 6
+    },
+    {
+      "id": "wood-supply",
+      "resource": "wood",
+      "max_rate": 24,
+      "unit_cost": 40000,
+      "x": 0,
+      "y": 8
+    },
+    {
+      "id": "paint-supply",
+      "resource": "paint",
+      "max_rate": 12,
+      "unit_cost": 35000,
+      "x": 0,
+      "y": 10
+    }
+  ],
+  "machine_types": [
+    {
+      "id": "loom",
+      "name": "Loom",
+      "cost": 750000,
+      "recipes": [
+        {
+          "id": "fabric",
+          "name": "Weave fabric",
+          "inputs": { "cotton": 4, "string": 2 },
+          "outputs": { "fabric": 2 },
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "carder",
+      "name": "Carder",
+      "cost": 500000,
+      "recipes": [
+        {
+          "id": "stuffing",
+          "name": "Card stuffing",
+          "inputs": { "cotton": 3 },
+          "outputs": { "stuffing": 4 },
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "sewing",
+      "name": "Sewing station",
+      "cost": 1000000,
+      "recipes": [
+        {
+          "id": "stuffed-animal",
+          "name": "Sew stuffed animals",
+          "inputs": { "fabric": 2, "stuffing": 4, "string": 2 },
+          "outputs": { "stuffed-animal": 2 },
+          "hours": 2
+        },
+        {
+          "id": "kite",
+          "name": "Sew a kite",
+          "inputs": { "fabric": 1, "dowel": 2, "string": 2 },
+          "outputs": { "kite": 1 },
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "woodshop",
+      "name": "Woodshop",
+      "cost": 900000,
+      "recipes": [
+        {
+          "id": "guitar-body",
+          "name": "Carve a guitar body",
+          "inputs": { "wood": 3 },
+          "outputs": { "guitar-body": 1, "offcut": 1 },
+          "hours": 2
+        },
+        {
+          "id": "dowel",
+          "name": "Cut dowels",
+          "inputs": { "wood": 1 },
+          "outputs": { "dowel": 3 },
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "paint-booth",
+      "name": "Paint booth",
+      "cost": 600000,
+      "recipes": [
+        {
+          "id": "paint-body",
+          "name": "Paint a guitar body",
+          "inputs": { "guitar-body": 1, "paint": 1 },
+          "outputs": { "painted-body": 1 },
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "molder",
+      "name": "Molder",
+      "cost": 600000,
+      "recipes": [
+        {
+          "id": "pegs",
+          "name": "Mold tuning pegs",
+          "inputs": { "plastic": 1 },
+          "outputs": { "pegs": 4 },
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "press",
+      "name": "Press",
+      "cost": 750000,
+      "recipes": [
+        {
+          "id": "wheels",
+          "name": "Press wheels",
+          "inputs": { "rubber": 2, "plastic": 1 },
+          "outputs": { "wheels": 4 },
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "workbench",
+      "name": "Workbench",
+      "cost": 600000,
+      "recipes": [
+        {
+          "id": "chassis",
+          "name": "Build chassis",
+          "inputs": { "wood": 2, "plastic": 3 },
+          "outputs": { "chassis": 2 },
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "gear-cutter",
+      "name": "Gear cutter",
+      "cost": 800000,
+      "recipes": [
+        {
+          "id": "gears",
+          "name": "Cut gears",
+          "inputs": { "wood": 2 },
+          "outputs": { "gears": 3 },
+          "hours": 1
+        }
+      ]
+    },
+    {
+      "id": "motor-bench",
+      "name": "Motor bench",
+      "cost": 900000,
+      "recipes": [
+        {
+          "id": "motor",
+          "name": "Wind motors",
+          "inputs": { "gears": 2, "plastic": 1 },
+          "outputs": { "motor": 1 },
+          "hours": 2
+        }
+      ]
+    },
+    {
+      "id": "assembly",
+      "name": "Assembly bench",
+      "cost": 1250000,
+      "recipes": [
+        {
+          "id": "toy-guitar",
+          "name": "Assemble a toy guitar",
+          "inputs": { "painted-body": 1, "string": 3, "pegs": 4 },
+          "outputs": { "toy-guitar": 1 },
+          "hours": 2
+        },
+        {
+          "id": "toy-car",
+          "name": "Assemble toy cars",
+          "inputs": { "chassis": 2, "wheels": 8 },
+          "outputs": { "toy-car": 2 },
+          "hours": 2
+        }
+      ]
+    },
+    {
+      "id": "toy-lab",
+      "name": "Toy lab",
+      "cost": 1500000,
+      "recipes": [
+        {
+          "id": "robot",
+          "name": "Build a wind-up robot",
+          "inputs": { "motor": 1, "chassis": 1, "paint": 1 },
+          "outputs": { "robot": 1 },
+          "hours": 2
+        },
+        {
+          "id": "racer",
+          "name": "Build an RC racer",
+          "inputs": { "motor": 1, "chassis": 1, "wheels": 4, "paint": 1 },
+          "outputs": { "racer": 1 },
+          "hours": 2
+        }
+      ]
+    }
+  ],
+  "market": {
+    "x": 15,
+    "y": 6,
+    "listings": [
+      {
+        "resource": "stuffed-animal",
+        "price": 450000,
+        "demand": 3,
+        "overflow_price": 250000
+      },
+      {
+        "resource": "toy-guitar",
+        "price": 1500000,
+        "demand": 1,
+        "overflow_price": 800000
+      },
+      {
+        "resource": "toy-car",
+        "price": 650000,
+        "demand": 2,
+        "overflow_price": 350000
+      },
+      {
+        "resource": "offcut",
+        "price": 5000,
+        "demand": 99,
+        "overflow_price": 5000
+      },
+      {
+        "resource": "kite",
+        "price": 400000,
+        "demand": 2,
+        "overflow_price": 225000
+      },
+      {
+        "resource": "robot",
+        "price": 1800000,
+        "demand": 1,
+        "overflow_price": 1000000
+      },
+      {
+        "resource": "racer",
+        "price": 2400000,
+        "demand": 1,
+        "overflow_price": 1400000
+      }
+    ]
+  },
+  "slots": [
+    { "id": "s1", "x": 3, "y": 1 },
+    { "id": "s2", "x": 3, "y": 3 },
+    { "id": "s3", "x": 3, "y": 5 },
+    { "id": "s4", "x": 3, "y": 7 },
+    { "id": "s5", "x": 3, "y": 9 },
+    { "id": "s6", "x": 6, "y": 1 },
+    { "id": "s7", "x": 6, "y": 3 },
+    { "id": "s8", "x": 6, "y": 5 },
+    { "id": "s9", "x": 6, "y": 7 },
+    { "id": "s10", "x": 6, "y": 9 },
+    { "id": "s11", "x": 9, "y": 1 },
+    { "id": "s12", "x": 9, "y": 3 },
+    { "id": "s13", "x": 9, "y": 5 },
+    { "id": "s14", "x": 9, "y": 7 },
+    { "id": "s15", "x": 9, "y": 9 },
+    { "id": "s16", "x": 12, "y": 1 },
+    { "id": "s17", "x": 12, "y": 3 },
+    { "id": "s18", "x": 12, "y": 5 },
+    { "id": "s19", "x": 12, "y": 7 },
+    { "id": "s20", "x": 12, "y": 9 }
+  ],
+  "objectives": [
+    {
+      "kind": "sold",
+      "resource": "robot",
+      "at_least": 1,
+      "text": "Sell a wind-up robot"
+    },
+    {
+      "kind": "sold",
+      "resource": "racer",
+      "at_least": 1,
+      "text": "Sell an RC racer"
+    },
+    { "kind": "profit", "at_least": 30000000, "text": "Earn $300,000" }
+  ],
+  "reference_designs": [
+    {
+      "name": "Initial",
+      "initial": true,
+      "design": {
+        "orders": {
+          "cotton-supply": 7,
+          "string-supply": 6,
+          "wood-supply": 2,
+          "plastic-supply": 2,
+          "paint-supply": 1
+        },
+        "machines": [
+          { "slot": "s1", "type": "loom", "recipe": "fabric" },
+          { "slot": "s2", "type": "carder", "recipe": "stuffing" },
+          { "slot": "s3", "type": "woodshop", "recipe": "guitar-body" },
+          { "slot": "s4", "type": "molder", "recipe": "pegs" },
+          { "slot": "s6", "type": "sewing", "recipe": "stuffed-animal" },
+          { "slot": "s7", "type": "paint-booth", "recipe": "paint-body" },
+          { "slot": "s11", "type": "assembly", "recipe": "toy-guitar" }
+        ],
+        "belts": [
+          {
+            "from": "cotton-supply",
+            "to": "s1",
+            "resource": "cotton",
+            "weight": 1
+          },
+          {
+            "from": "cotton-supply",
+            "to": "s2",
+            "resource": "cotton",
+            "weight": 1
+          },
+          {
+            "from": "string-supply",
+            "to": "s1",
+            "resource": "string",
+            "weight": 1
+          },
+          {
+            "from": "string-supply",
+            "to": "s6",
+            "resource": "string",
+            "weight": 1
+          },
+          {
+            "from": "string-supply",
+            "to": "s11",
+            "resource": "string",
+            "weight": 1
+          },
+          {
+            "from": "wood-supply",
+            "to": "s3",
+            "resource": "wood",
+            "weight": 1
+          },
+          {
+            "from": "plastic-supply",
+            "to": "s4",
+            "resource": "plastic",
+            "weight": 1
+          },
+          {
+            "from": "paint-supply",
+            "to": "s7",
+            "resource": "paint",
+            "weight": 1
+          },
+          { "from": "s1", "to": "s6", "resource": "fabric", "weight": 1 },
+          { "from": "s2", "to": "s6", "resource": "stuffing", "weight": 1 },
+          { "from": "s3", "to": "s7", "resource": "guitar-body", "weight": 1 },
+          { "from": "s3", "to": "market", "resource": "offcut", "weight": 1 },
+          {
+            "from": "s7",
+            "to": "s11",
+            "resource": "painted-body",
+            "weight": 1
+          },
+          { "from": "s4", "to": "s11", "resource": "pegs", "weight": 1 },
+          {
+            "from": "s6",
+            "to": "market",
+            "resource": "stuffed-animal",
+            "weight": 1
+          },
+          {
+            "from": "s11",
+            "to": "market",
+            "resource": "toy-guitar",
+            "weight": 1
+          }
+        ]
+      },
+      "profit": 4100000
+    },
+    {
+      "name": "Best known",
+      "design": {
+        "belts": [
+          {"from": "cotton-supply", "resource": "cotton", "to": "s3", "weight": 1},
+          {"from": "cotton-supply", "resource": "cotton", "to": "s5", "weight": 1},
+          {"from": "string-supply", "resource": "string", "to": "s5", "weight": 1},
+          {"from": "string-supply", "resource": "string", "to": "s10", "weight": 1},
+          {"from": "string-supply", "resource": "string", "to": "s11", "weight": 1},
+          {"from": "string-supply", "resource": "string", "to": "s18", "weight": 1},
+          {"from": "string-supply", "resource": "string", "to": "s20", "weight": 1},
+          {"from": "plastic-supply", "resource": "plastic", "to": "s1", "weight": 1},
+          {"from": "plastic-supply", "resource": "plastic", "to": "s2", "weight": 1},
+          {"from": "plastic-supply", "resource": "plastic", "to": "s4", "weight": 1},
+          {"from": "plastic-supply", "resource": "plastic", "to": "s9", "weight": 1},
+          {"from": "plastic-supply", "resource": "plastic", "to": "s12", "weight": 1},
+          {"from": "plastic-supply", "resource": "plastic", "to": "s13", "weight": 1},
+          {"from": "plastic-supply", "resource": "plastic", "to": "s15", "weight": 1},
+          {"from": "rubber-supply", "resource": "rubber", "to": "s2", "weight": 1},
+          {"from": "wood-supply", "resource": "wood", "to": "s1", "weight": 1},
+          {"from": "wood-supply", "resource": "wood", "to": "s6", "weight": 1},
+          {"from": "wood-supply", "resource": "wood", "to": "s7", "weight": 1},
+          {"from": "wood-supply", "resource": "wood", "to": "s8", "weight": 1},
+          {"from": "paint-supply", "resource": "paint", "to": "s14", "weight": 1},
+          {"from": "paint-supply", "resource": "paint", "to": "s16", "weight": 1},
+          {"from": "paint-supply", "resource": "paint", "to": "s17", "weight": 1},
+          {"from": "paint-supply", "resource": "paint", "to": "s19", "weight": 1},
+          {"from": "s5", "resource": "fabric", "to": "s10", "weight": 1},
+          {"from": "s5", "resource": "fabric", "to": "s11", "weight": 1},
+          {"from": "s3", "resource": "stuffing", "to": "s10", "weight": 1},
+          {"from": "s3", "resource": "stuffing", "to": "s11", "weight": 1},
+          {"from": "s6", "resource": "guitar-body", "to": "s14", "weight": 1},
+          {"from": "s8", "resource": "guitar-body", "to": "s14", "weight": 1},
+          {"from": "s14", "resource": "painted-body", "to": "s18", "weight": 1},
+          {"from": "s14", "resource": "painted-body", "to": "s20", "weight": 1},
+          {"from": "s6", "resource": "offcut", "to": "market", "weight": 1},
+          {"from": "s8", "resource": "offcut", "to": "market", "weight": 1},
+          {"from": "s4", "resource": "pegs", "to": "s18", "weight": 1},
+          {"from": "s4", "resource": "pegs", "to": "s20", "weight": 1},
+          {"from": "s2", "resource": "wheels", "to": "s16", "weight": 1},
+          {"from": "s2", "resource": "wheels", "to": "s17", "weight": 1},
+          {"from": "s1", "resource": "chassis", "to": "s16", "weight": 1},
+          {"from": "s1", "resource": "chassis", "to": "s17", "weight": 1},
+          {"from": "s1", "resource": "chassis", "to": "s19", "weight": 1},
+          {"from": "s7", "resource": "gears", "to": "s9", "weight": 1},
+          {"from": "s7", "resource": "gears", "to": "s12", "weight": 1},
+          {"from": "s7", "resource": "gears", "to": "s13", "weight": 1},
+          {"from": "s7", "resource": "gears", "to": "s15", "weight": 1},
+          {"from": "s9", "resource": "motor", "to": "s16", "weight": 1},
+          {"from": "s9", "resource": "motor", "to": "s17", "weight": 1},
+          {"from": "s9", "resource": "motor", "to": "s19", "weight": 1},
+          {"from": "s12", "resource": "motor", "to": "s16", "weight": 1},
+          {"from": "s12", "resource": "motor", "to": "s17", "weight": 1},
+          {"from": "s12", "resource": "motor", "to": "s19", "weight": 1},
+          {"from": "s13", "resource": "motor", "to": "s16", "weight": 1},
+          {"from": "s13", "resource": "motor", "to": "s17", "weight": 1},
+          {"from": "s13", "resource": "motor", "to": "s19", "weight": 1},
+          {"from": "s15", "resource": "motor", "to": "s16", "weight": 1},
+          {"from": "s15", "resource": "motor", "to": "s17", "weight": 1},
+          {"from": "s15", "resource": "motor", "to": "s19", "weight": 1},
+          {"from": "s10", "resource": "stuffed-animal", "to": "market", "weight": 1},
+          {"from": "s11", "resource": "stuffed-animal", "to": "market", "weight": 1},
+          {"from": "s18", "resource": "toy-guitar", "to": "market", "weight": 1},
+          {"from": "s20", "resource": "toy-guitar", "to": "market", "weight": 1},
+          {"from": "s19", "resource": "robot", "to": "market", "weight": 1},
+          {"from": "s16", "resource": "racer", "to": "market", "weight": 1},
+          {"from": "s17", "resource": "racer", "to": "market", "weight": 1}
+        ],
+        "machines": [
+          {"recipe": "chassis", "slot": "s1", "type": "workbench"},
+          {"recipe": "wheels", "slot": "s2", "type": "press"},
+          {"recipe": "stuffing", "slot": "s3", "type": "carder"},
+          {"recipe": "pegs", "slot": "s4", "type": "molder"},
+          {"recipe": "fabric", "slot": "s5", "type": "loom"},
+          {"recipe": "guitar-body", "slot": "s6", "type": "woodshop"},
+          {"recipe": "gears", "slot": "s7", "type": "gear-cutter"},
+          {"recipe": "guitar-body", "slot": "s8", "type": "woodshop"},
+          {"recipe": "motor", "slot": "s9", "type": "motor-bench"},
+          {"recipe": "stuffed-animal", "slot": "s10", "type": "sewing"},
+          {"recipe": "stuffed-animal", "slot": "s11", "type": "sewing"},
+          {"recipe": "motor", "slot": "s12", "type": "motor-bench"},
+          {"recipe": "motor", "slot": "s13", "type": "motor-bench"},
+          {"recipe": "paint-body", "slot": "s14", "type": "paint-booth"},
+          {"recipe": "motor", "slot": "s15", "type": "motor-bench"},
+          {"recipe": "racer", "slot": "s16", "type": "toy-lab"},
+          {"recipe": "racer", "slot": "s17", "type": "toy-lab"},
+          {"recipe": "toy-guitar", "slot": "s18", "type": "assembly"},
+          {"recipe": "robot", "slot": "s19", "type": "toy-lab"},
+          {"recipe": "toy-guitar", "slot": "s20", "type": "assembly"}
+        ],
+        "orders": {"cotton-supply": 37, "paint-supply": 4, "plastic-supply": 9, "rubber-supply": 6, "string-supply": 15, "wood-supply": 18}
+      },
+      "profit": 42002500
+    }
+  ]
+}

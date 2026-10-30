@@ -13,7 +13,7 @@ import {
 } from './factory-models';
 import { objectiveMet } from './objectives';
 
-/** What is selected on the floor: a node (supplier, slot or market) or a belt. */
+/** What is selected on the floor: a node (supplier, machine or market) or a belt. */
 export type Selection = { kind: 'node'; id: string } | { kind: 'belt'; index: number } | null;
 
 /** A tested design and its 24-hour report. */

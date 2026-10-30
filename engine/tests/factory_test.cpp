@@ -70,7 +70,7 @@ Json passThrough() {
 
 TEST(FactoryLevels, EveryLevelParsesAndReferenceProfitsMatch) {
   const auto files = test::factoryLevelFiles();
-  ASSERT_EQ(files.size(), 2U);
+  ASSERT_EQ(files.size(), 3U);
   for (const auto& f : files) {
     SCOPED_TRACE(f.string());
     const Json doc = test::loadJson(f);
@@ -119,6 +119,37 @@ TEST(FactorySim, PipelineTakesAnHourPerBeltAndPerBatch) {
   EXPECT_EQ(r.hours[1].machines[0].progress, 1);
   EXPECT_EQ(r.hours[0].machines[0].status, MachineStatus::Starved);
   EXPECT_EQ(r.hours[0].machines[0].missing, std::vector<Index>{*l.findResource("a")});
+}
+
+TEST(FactorySim, WarehouseCapsStockAndSharesRoomBetweenSuppliers) {
+  Json j = tinyLevel(3);
+  j["storage"] = 5;
+  j["resources"].push_back({{"id", "d"}, {"kind", "raw"}});
+  j["suppliers"].push_back({{"id", "sd"}, {"resource", "d"}, {"max_rate", 20}, {"unit_cost", 1}});
+  const Level l = level(j);
+  // Nothing takes the stock, so it piles up until the warehouse is full.
+  const SimResult r = simulate(l, design(l, Json::parse(R"({"orders": {"sa": 4, "sd": 4}})")));
+  // Hour 0: 5 units of room, shared a unit at a time: sa 3, sd 2. Then it is full.
+  EXPECT_EQ(r.hours[0].delivered, (std::vector<std::int64_t>{3, 2}));
+  EXPECT_EQ(r.hours[0].stock, (std::vector<std::int64_t>{3, 2}));
+  EXPECT_EQ(r.hours[1].delivered, (std::vector<std::int64_t>{0, 0}));
+  EXPECT_EQ(r.hours[2].stock, (std::vector<std::int64_t>{3, 2}));
+  // Only what was delivered is paid for.
+  EXPECT_EQ(r.purchases, 3 * 10 + 2 * 1);
+
+  // Without a warehouse every order is delivered.
+  j.erase("storage");
+  const Level open = level(j);
+  const SimResult all =
+      simulate(open, design(open, Json::parse(R"({"orders": {"sa": 4, "sd": 4}})")));
+  EXPECT_EQ(all.hours[2].stock, (std::vector<std::int64_t>{12, 12}));
+  EXPECT_EQ(all.purchases, 3 * (4 * 10 + 4 * 1));
+}
+
+TEST(FactorySim, WarehouseMustHoldSomething) {
+  Json j = tinyLevel();
+  j["storage"] = 0;
+  EXPECT_FALSE(json::parseLevel(j).ok());
 }
 
 TEST(FactorySim, MultiHourBatchReportsProgress) {

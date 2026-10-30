@@ -94,6 +94,8 @@ struct Level {
   int belt_capacity = 10;
   int buffer_batches = 2;
   std::optional<Cents> budget;
+  /// Units all suppliers' stock may hold together (the warehouse); none means unlimited.
+  std::optional<int> storage;
   std::vector<Resource> resources;
   std::vector<Supplier> suppliers;
   std::vector<MachineType> machine_types;
@@ -174,6 +176,7 @@ inline constexpr int kMaxRate = 1000;
 inline constexpr Cents kMaxMoney = 100'000'000;
 inline constexpr int kMaxDemand = 1000;
 inline constexpr int kMaxWeight = 10;
+inline constexpr int kMaxStorage = 100'000;
 }  // namespace limits
 
 /// Checks a level's structure and limits. Empty means well formed; everything else in this

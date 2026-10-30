@@ -1,10 +1,13 @@
 import { test as base, expect } from '@playwright/test';
 
-/** Fails the test on any console error or warning, page error, or 409 (illegal action). */
+/** Fails the test on any console error or warning (but the GPU driver's), page error, or 409
+ * (illegal action). */
 export const test = base.extend<{ problems: string[] }>({
   problems: async ({ page }, use) => {
     const problems: string[] = [];
     page.on('console', (m) => {
+      // Chrome's software WebGL in headless runs reports its own performance notes.
+      if (m.text().includes('GL Driver Message')) return;
       if (m.type() === 'error' || m.type() === 'warning')
         problems.push(`console ${m.type()}: ${m.text()}`);
     });

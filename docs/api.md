@@ -252,12 +252,14 @@ level by id.
                    "missing": [], "inputs": {"cotton": 3, "string": 2},
                    "outputs": {"fabric": 2}, "batches_done": 5}],
      "belts": [5, 3, 2, 0, 0, 0, 0],
-     "stock": {"cotton-supply": 0, "string-supply": 4}}
+     "stock": {"cotton-supply": 0, "string-supply": 4},
+     "delivered": {"cotton-supply": 8, "string-supply": 4}}
   ]
 }
 ```
 
 `hours[].belts[i]` is the number of units design belt `i` carried that hour; `machines` follow
-the design's machine order. `solve` runs the solvers in parallel on the request (each limited
+the design's machine order. `delivered` is what each supplier delivered and charged that hour:
+its order, or less when the level's warehouse (`storage`) was full. `solve` runs the solvers in parallel on the request (each limited
 to `timeLimitMs`, default 2000, capped at 10 000) and returns each design re-scored by the
 simulator, plus the flow LP upper bound `bound`.

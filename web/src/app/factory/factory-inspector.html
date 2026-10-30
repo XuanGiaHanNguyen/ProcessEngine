@@ -1,6 +1,6 @@
 @if (supplier(); as s) {
   <section class="inspector" aria-label="Supplier">
-    <h3>{{ iconFor(s.resource) }} {{ resourceName(s.resource) }} supplier</h3>
+    <h3><ng-icon [svg]="iconFor(s.resource)" /> {{ resourceName(s.resource) }} supplier</h3>
     <label class="field">
       <span>Order per hour</span>
       <span class="order-row">
@@ -33,7 +33,8 @@
 } @else if (machine(); as m) {
   <section class="inspector" aria-label="Machine">
     <h3>
-      {{ outputIcon(m.recipe) }} {{ m.type.name }} <span class="slot-id">{{ m.slot }}</span>
+      <ng-icon [svg]="outputIcon(m.recipe)" /> {{ m.type.name }}
+      <span class="slot-id">{{ m.slot }}</span>
     </h3>
     @if (m.type.recipes.length > 1) {
       <label class="field">
@@ -50,13 +51,17 @@
     <div class="recipe">
       <span>
         @for (i of entries(m.recipe.inputs); track i.id) {
-          <span class="chip">{{ i.qty }} {{ iconFor(i.id) }} {{ resourceName(i.id) }}</span>
+          <span class="chip"
+            >{{ i.qty }} <ng-icon [svg]="iconFor(i.id)" /> {{ resourceName(i.id) }}</span
+          >
         }
       </span>
       <span class="arrow" aria-label="makes">→</span>
       <span>
         @for (o of entries(m.recipe.outputs); track o.id) {
-          <span class="chip">{{ o.qty }} {{ iconFor(o.id) }} {{ resourceName(o.id) }}</span>
+          <span class="chip"
+            >{{ o.qty }} <ng-icon [svg]="iconFor(o.id)" /> {{ resourceName(o.id) }}</span
+          >
         }
       </span>
     </div>
@@ -67,46 +72,13 @@
       <dd>{{ money(m.type.cost) }}</dd>
     </dl>
     <ng-container *ngTemplateOutlet="beltList" />
-    <button type="button" class="danger" (click)="removeMachine()">Remove machine</button>
-  </section>
-} @else if (emptySlot(); as slot) {
-  <section class="inspector" aria-label="Build a machine">
-    <h3>Build in {{ slot }}</h3>
-    @if (over() !== null) {
-      <p class="sub">Budget left: {{ money(over() ?? 0) }}</p>
-    }
-    <label class="check-row">
-      <input
-        type="checkbox"
-        [checked]="autoConnect()"
-        (change)="autoConnect.set($any($event.target).checked)"
-      />
-      Connect belts automatically
-    </label>
-    <ul class="build-menu">
-      @for (t of store.level()?.machine_types ?? []; track t.id) {
-        @for (r of t.recipes; track r.id) {
-          <li>
-            <button
-              type="button"
-              (click)="build(t, r)"
-              [attr.aria-label]="'Build ' + t.name + ': ' + r.name"
-            >
-              <span class="big-icon">{{ outputIcon(r) }}</span>
-              <span class="what">
-                <strong>{{ r.name }}</strong>
-                <span>{{ t.name }} · {{ r.hours }} h</span>
-              </span>
-              <span class="price">{{ money(t.cost) }}</span>
-            </button>
-          </li>
-        }
-      }
-    </ul>
+    <button type="button" class="danger" (click)="removeMachine()">
+      <ng-icon name="lucideTrash2" /> Remove machine
+    </button>
   </section>
 } @else if (node() === 'market') {
   <section class="inspector" aria-label="Market">
-    <h3>🛒 Market</h3>
+    <h3><ng-icon [svg]="marketIcon" /> Market</h3>
     <table>
       <thead>
         <tr>
@@ -119,7 +91,7 @@
       <tbody>
         @for (l of store.level()?.market?.listings ?? []; track l.resource) {
           <tr>
-            <td>{{ iconFor(l.resource) }} {{ resourceName(l.resource) }}</td>
+            <td><ng-icon [svg]="iconFor(l.resource)" /> {{ resourceName(l.resource) }}</td>
             <td>{{ money(l.price) }}</td>
             <td>{{ l.demand }}</td>
             <td>{{ money(l.overflow_price) }}</td>
@@ -135,7 +107,7 @@
 } @else if (belt(); as b) {
   <section class="inspector" aria-label="Belt">
     <h3>Belt</h3>
-    <p>{{ b.label }}</p>
+    <p><ng-icon [svg]="b.icon" /> {{ b.label }}</p>
     <div class="weight-row">
       <span>Split weight</span>
       <button
@@ -143,7 +115,7 @@
         (click)="setWeight(b.index, (b.belt.weight ?? 1) - 1)"
         aria-label="Lower weight"
       >
-        −
+        <ng-icon name="lucideMinus" />
       </button>
       <strong aria-live="polite">{{ b.belt.weight ?? 1 }}</strong>
       <button
@@ -151,7 +123,7 @@
         (click)="setWeight(b.index, (b.belt.weight ?? 1) + 1)"
         aria-label="Raise weight"
       >
-        +
+        <ng-icon name="lucidePlus" />
       </button>
     </div>
     @if (split() !== null) {
@@ -161,15 +133,17 @@
     } @else {
       <p class="sub">Weights matter when a node sends the same resource on several belts.</p>
     }
-    <button type="button" class="danger" (click)="removeBelt(b.index)">Remove belt</button>
+    <button type="button" class="danger" (click)="removeBelt(b.index)">
+      <ng-icon name="lucideTrash2" /> Remove belt
+    </button>
   </section>
 } @else {
   <section aria-label="Objectives">
     <h3>Objectives</h3>
     <ng-content select="[objectives]" />
     <p class="hint">
-      Click a slot to build, a supplier to set its order, or a belt to change its split. Drag from a
-      supplier or machine to another machine or the market to lay a belt.
+      Click a supplier to set its order, a machine to change its recipe, or a belt to change its
+      split. Drag from a supplier or machine to another machine or the market to lay a belt.
     </p>
   </section>
 }
@@ -180,13 +154,16 @@
     <ul class="belts">
       @for (r of nodeBelts().incoming; track r.index) {
         <li>
-          <button type="button" (click)="selectBelt(r.index)">in · {{ r.label }}</button>
+          <button type="button" (click)="selectBelt(r.index)">
+            <ng-icon [svg]="r.icon" /> in · {{ r.label }}
+          </button>
         </li>
       }
       @for (r of nodeBelts().outgoing; track r.index) {
         <li>
           <button type="button" (click)="selectBelt(r.index)">
-            out · {{ r.label }}{{ (r.belt.weight ?? 1) > 1 ? ' ×' + r.belt.weight : '' }}
+            <ng-icon [svg]="r.icon" /> out · {{ r.label
+            }}{{ (r.belt.weight ?? 1) > 1 ? ' ×' + r.belt.weight : '' }}
           </button>
         </li>
       }

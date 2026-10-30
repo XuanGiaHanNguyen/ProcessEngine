@@ -1,25 +1,29 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideMinus, lucidePlus, lucideTrash2 } from '@ng-icons/lucide';
 
 import * as ops from './design-ops';
-import { Belt, MachineType, Recipe, money } from './factory-models';
+import { Belt, Recipe, money } from './factory-models';
 import { FactoryStore } from './factory-store';
-import { iconFor } from './icons';
+import { MARKET_ICON, iconFor } from './icons';
 
 interface BeltRow {
   index: number;
   belt: Belt;
+  icon: string;
   label: string;
 }
 
 /**
  * The right-hand panel: edits whatever is selected on the floor (supplier order, machine
- * recipe, belt weight), offers machines for an empty slot, and shows the objectives when
+ * recipe, belt weight) and shows the objectives when
  * nothing is selected.
  */
 @Component({
   selector: 'app-factory-inspector',
-  imports: [NgTemplateOutlet],
+  imports: [NgIcon, NgTemplateOutlet],
+  viewProviders: [provideIcons({ lucideMinus, lucidePlus, lucideTrash2 })],
   templateUrl: './factory-inspector.html',
   styleUrl: './factory-inspector.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -28,8 +32,8 @@ export class FactoryInspector {
   protected readonly store = inject(FactoryStore);
   protected readonly money = money;
   protected readonly iconFor = iconFor;
+  protected readonly marketIcon = MARKET_ICON;
   /** Belt new machines to everything they can use. */
-  protected readonly autoConnect = signal(true);
 
   private readonly level = this.store.level;
   private readonly draft = this.store.draft;
@@ -58,17 +62,14 @@ export class FactoryInspector {
     return placed && type && recipe ? { slot: id, type, recipe } : null;
   });
 
-  protected readonly emptySlot = computed(() => {
-    const id = this.node();
-    return id && this.level()?.slots.some((s) => s.id === id) && !this.machine() ? id : null;
-  });
-
   protected readonly belt = computed(() => {
     const sel = this.store.selection();
     const draft = this.draft();
     if (sel?.kind !== 'belt' || !draft) return null;
     const b = draft.belts[sel.index];
-    return b ? { index: sel.index, belt: b, label: this.beltLabel(b) } : null;
+    return b
+      ? { index: sel.index, belt: b, icon: iconFor(b.resource), label: this.beltLabel(b) }
+      : null;
   });
 
   /** Belts touching the selected node, for its belt list. */
@@ -77,6 +78,7 @@ export class FactoryInspector {
     const rows = (this.draft()?.belts ?? []).map((belt, index) => ({
       index,
       belt,
+      icon: iconFor(belt.resource),
       label: this.beltLabel(belt),
     }));
     return {
@@ -94,11 +96,6 @@ export class FactoryInspector {
     );
     const total = siblings.reduce((sum, x) => sum + (x.weight ?? 1), 0);
     return siblings.length > 1 ? Math.round(((b.belt.weight ?? 1) / total) * 100) : null;
-  });
-
-  protected readonly over = computed(() => {
-    const budget = this.level()?.budget;
-    return budget != null ? budget - this.store.buildCost() : null;
   });
 
   protected name(node: string): string {
@@ -133,13 +130,6 @@ export class FactoryInspector {
     this.store.edit((_, d) => ops.setOrder(d, s.id, rate));
   }
 
-  protected build(type: MachineType, recipe: Recipe): void {
-    const slot = this.emptySlot();
-    if (!slot) return;
-    const auto = this.autoConnect();
-    this.store.edit((level, d) => ops.placeMachine(level, d, slot, type.id, recipe.id, auto));
-  }
-
   protected changeRecipe(recipe: string): void {
     const m = this.machine();
     if (!m || m.recipe.id === recipe) return;
@@ -166,6 +156,6 @@ export class FactoryInspector {
   }
 
   private beltLabel(b: Belt): string {
-    return `${iconFor(b.resource)} ${this.resourceName(b.resource)}: ${this.name(b.from)} → ${this.name(b.to)}`;
+    return `${this.resourceName(b.resource)}: ${this.name(b.from)} → ${this.name(b.to)}`;
   }
 }

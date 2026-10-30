@@ -10,11 +10,11 @@ simulated annealing, LP relaxation) run side by side, and every result is re-che
 independent validator. They are available from the `pf_compare` CLI and the REST/WebSocket
 API.
 
-The web app is a **toy factory** design game: build a factory on a D3-drawn floor (suppliers
-of cotton, string, plastic, rubber and wood; looms, sewing stations, woodshops, assembly
-benches; conveyor belts), test it over a simulated 24-hour day, step through it hour by hour,
-let three optimizers build it for you (**Auto**), and get hints, a score and a share link
-(**Play**), all on one screen.
+The web app is a **toy factory** design game: build a factory on a cartoony 3D floor
+(supplier trucks of cotton, string, plastic, rubber, wood and paint; looms, sewing stations,
+woodshops, presses, assembly benches and toy labs; conveyor belts), test it over a simulated
+24-hour day, step through it hour by hour, let three optimizers build it for you (**Auto**),
+and get hints, a score and a share link (**Play**), all on one screen.
 
 ![Factory mode: build, test, step through the day, compare with the optimizers](docs/images/factory-mode.gif)
 
@@ -36,10 +36,13 @@ cd web && npm ci && npm start                         # UI on :4200, proxies /ap
 
 ## What you can do
 
-**Build**: two levels, Easy (one stuffed-animal line, best known $58,100) and Hard (four
-toys from five raw materials, best known $165,800). Click an empty slot to build a machine, a
-supplier to set its hourly order, a belt to change how a node splits its output; drag from
-one node to another to lay a belt. Hover or select a machine to light up just its belts.
+**Build**: three levels, Easy (one stuffed-animal line, best known $58,100), Hard (four
+toys from five raw materials, best known $171,725) and Expert (six toys, with motors and
+paint, on 20 slots, best known $420,025). Click a supplier to set its hourly order, a machine
+to change its recipe, a belt to change how a node splits its output; drag from one node to
+another to lay a belt. Drag to orbit and scroll to zoom. Hover or select a machine to light up
+its whole chain, back to the trucks and on to the market. The right panel folds away to a
+strip of buttons when you want the whole floor.
 Every edit is checked by the server, with reasons ("s3 gets no Fabric"). **Test factory**
 runs the design through the engine's `FactorySim`, adds it to *Tested Factories*, and plays
 it back at 1×, 2× or 4×: machines show "1 of 2 hrs", "Blocked" or "Waiting", belts show what
@@ -48,20 +51,20 @@ they carried each hour, and a money chart scrubs through the day. The rules are 
 
 ![Factory mode: test playback](docs/images/factory-mode.png)
 
-**🤖 Auto** (a tab of the right panel): pick optimizers, a time limit and a seed, and run
+**Auto** (a tab of the right panel): pick optimizers, a time limit and a seed, and run
 them on the level. Each optimizer's factory becomes a test to watch or edit, and a D3 bar
 chart compares every tested factory with the best known profit and the LP upper bound.
 Results export as JSON.
 
 ![Auto tab: three optimizers compared with the best known profit and the bound](docs/images/factory-auto.png)
 
-**💡 Play** (the next tab): **Get a hint** asks the server for the single change (an order,
+**Play** (the next tab): **Get a hint** asks the server for the single change (an order,
 a belt, a split, a machine) that raises the draft's profit the most, with its exact gain, and
 **Do it** applies it. A score gives up to three stars against the best known factory; a D3
 timeline shows what every machine did in every hour of the test being played back; and the
 draft can be shared as a link or exported and imported as JSON.
 
-![Play tab: a hint worth $8,200, the score and the machine timeline](docs/images/factory-play.png)
+![Play tab: a hint worth $1,400, the score and the machine timeline](docs/images/factory-play.png)
 
 ## Solver comparison
 
@@ -86,7 +89,8 @@ Across generated instances (details and methodology in [docs/solvers.md](docs/so
 | Level | Initial design | `greedy` | `local_search` | `flow_lp` | Upper bound |
 |---|---|---|---|---|---|
 | Easy: First Stitch | $8,100 | $49,900 | $58,100 | $58,100 | $158,755 |
-| Hard: Full Line | $106,700 | $155,700 | $160,900 | $115,000 | $397,845 |
+| Hard: Full Line | $106,700 | $155,700 | $171,100 | $142,450 | $397,845 |
+| Expert: Toy Empire | $41,000 | $253,325 | $410,700 | $354,475 | $1,047,104 |
 
 ## Benchmarks
 

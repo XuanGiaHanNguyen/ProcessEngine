@@ -88,7 +88,9 @@ With `K = buffer_batches` (a level setting, default 2):
 - input buffer for resource `r` holds at most `K × inputs[r]`,
 - output buffer for resource `r` holds at most `K × outputs[r]`.
 
-Suppliers have an unbounded output buffer (their stock). The market has no buffers.
+Suppliers keep their stock in one shared **warehouse**: if the level sets `storage`, all
+suppliers' stock together holds at most `storage` units (no `storage` means unlimited). The
+market has no buffers.
 
 A machine is **busy** while a batch runs. A batch that starts in hour `h` completes in hour
 `h + hours`, so a 1-hour recipe can run back to back every hour.
@@ -108,7 +110,10 @@ order, then slots in level order; resources in level order; belts in design orde
    recipe's inputs **and** each output buffer has room for a full batch of that output
    (`out[r] + outputs[r] <= K × outputs[r]`). Starting removes the inputs.
 4. **Deliver.** Every supplier adds its order rate to its stock and charges
-   `order × unit_cost`.
+   `order × unit_cost`. With a warehouse, deliveries share the room left in it
+   (`storage` minus all suppliers' stock): one unit per supplier in turn, in level order,
+   until every order is in or the warehouse is full. Units that do not fit are not
+   delivered and not paid for, so over-ordering one ingredient can crowd out another.
 5. **Dispatch.** Every node with outgoing belts sends units from its output buffer (or
    stock), one unit at a time, resource by resource, until it runs out or no belt for that
    resource can take more. A belt can take a unit if
@@ -167,6 +172,7 @@ charts and objectives use only this report.
   "belt_capacity": 10,
   "buffer_batches": 2,
   "budget": null,
+  "storage": 120,
   "resources": [{"id": "cotton", "name": "Cotton", "kind": "raw"}],
   "suppliers": [{"id": "cotton-supply", "resource": "cotton", "max_rate": 40, "unit_cost": 20000, "x": 0, "y": 0}],
   "machine_types": [
@@ -216,7 +222,7 @@ Objectives are independent checkboxes: each one is met once any test of the leve
 
 `hours` 1..168; at most 32 resources, 8 suppliers, 12 machine types, 4 recipes per
 type, 24 slots, 256 belts; recipe quantities 1..1000; recipe hours 1..24;
-`belt_capacity` 1..1000; `buffer_batches` 1..10; `max_rate` 0..1000; prices and costs
+`belt_capacity` 1..1000; `buffer_batches` 1..10; `storage` 1..100 000 or null; `max_rate` 0..1000; prices and costs
 0..100 000 000 cents ($1,000,000); `demand` 0..1000. Ids are 1–40 characters of `[a-z0-9-]`; `"market"`
 is reserved.
 
@@ -268,13 +274,17 @@ prices.
 
 ## Levels
 
-There are two levels, an easy one and a hard one. Files: `instances/factory/N-id.json`.
-Both last 24 hours, with belt capacity 10 and buffers of 2 batches.
+There are three levels: Easy, Hard and Expert. Files: `instances/factory/N-id.json`.
+All last 24 hours, with belt capacity 10 and buffers of 2 batches. The warehouse holds 120
+units on Easy, 100 on Hard and 160 on Expert (the Easy initial design ends with 118 units in
+stock). The Hard and Expert best-known designs fill it in some hours, so their orders are not
+always delivered in full: over-ordering one ingredient crowds out another.
 
 | Level | Slots | Products | Initial | Best known | Upper bound |
 |---|---|---|---|---|---|
 | **Easy:** First Stitch | 5 | stuffed animal (cotton, string) | $8,100 | $58,100 | $158,755 |
-| **Hard:** Full Line | 10 | all four toys (all five raw materials) | $106,700 | $165,800 | $397,845 |
+| **Hard:** Full Line | 10 | all four toys (all five raw materials) | $106,700 | $171,725 | $397,845 |
+| **Expert:** Toy Empire | 20 | six toys, adding wind-up robots and RC racers (six raw materials, with paint) | $41,000 | $420,025 | $1,047,104 |
 
 "Best known" is the best of three 10-second `local_search` runs (`pf_factory`, seeds 1–3);
 it is a lower bound, not a proven optimum. "Upper bound" is the flow LP relaxation
@@ -284,12 +294,12 @@ files store each best-known design, and the engine's tests pin its profit.
 | Level | Best known design | Orders per hour | Sales | Purchases | Build | Profit |
 |---|---|---|---|---|---|---|
 | Easy | loom, carder, 2 × sewing (animals) | cotton 8, string 5 | $144,000 | $53,400 | $32,500 | **$58,100** |
-| Hard | loom, carder, 2 × sewing (animals), 2 × woodshop (bodies), molder, 2 × assembly (guitars), press | cotton 8, string 9, plastic 1, wood 3 | $355,000 | $100,200 | $89,000 | **$165,800** |
+| Hard | loom, carder, 2 × sewing (animals), woodshop (bodies), molder, assembly (guitars), press, workbench, assembly (cars) | cotton 14, string 24, plastic 5, rubber 2, wood 5 | $387,500 | $129,775 | $86,000 | **$171,725** |
+| Expert | loom, carder, 2 × sewing (animals), 2 × woodshop (bodies), molder, 2 × assembly (guitars), press, workbench, gear cutter, 4 × motor bench, paint booth, toy lab (robots), 2 × toy lab (racers) | cotton 37, string 15, plastic 9, rubber 6, wood 18, paint 4 | $814,000 | $203,975 | $190,000 | **$420,025** |
 
-The Hard press never runs (no rubber is ordered), yet removing it costs $34,500: it takes a
-share of the single plastic per hour, which spaces out peg production so guitars rarely
-arrive two in the same hour (when the second one sells at the overflow price). Timing is
-part of the game.
+Rubber is only used by the press, for wheels, and no initial design builds one, so the
+rubber supplier starts idle on Hard and Expert. Both best-known designs build a press: Hard's
+sells toy cars, and Expert's feeds its RC racers. Neither makes kites.
 
 ## Worked example (hand-checked)
 

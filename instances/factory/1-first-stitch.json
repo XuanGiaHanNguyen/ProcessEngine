@@ -6,6 +6,7 @@
   "hours": 24,
   "belt_capacity": 10,
   "buffer_batches": 2,
+  "storage": 120,
   "budget": null,
   "resources": [
     {"id": "cotton", "name": "Cotton", "kind": "raw"},

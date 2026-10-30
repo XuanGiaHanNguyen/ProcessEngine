@@ -1,0 +1,13 @@
+{
+  "name": "ProcessForge",
+  "short_name": "ProcessForge",
+  "description": "Build a toy factory, test it over a day, and race the optimizers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffaf0",
+  "theme_color": "#79c25a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -56,12 +56,12 @@ const STATUS_TEXT: Record<MachineStatus, string> = {
       filter: brightness(1.3);
     }
     .machine-timeline text {
-      fill: #f3f4f7;
+      fill: #1f2430;
       font-size: 10px;
     }
     .machine-timeline .now {
       fill: none;
-      stroke: #fff;
+      stroke: #1f2430;
       stroke-width: 1.5;
       pointer-events: none;
     }

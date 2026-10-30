@@ -6,6 +6,18 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import {
+  lucideBot,
+  lucideChartColumn,
+  lucideDownload,
+  lucideLightbulb,
+  lucideLink,
+  lucideShare2,
+  lucideStar,
+  lucideTrophy,
+  lucideUpload,
+} from '@ng-icons/lucide';
 
 import { download } from './factory-auto';
 import { money } from './factory-models';
@@ -18,11 +30,24 @@ import { MachineTimeline } from './machine-timeline';
  */
 @Component({
   selector: 'app-factory-play',
-  imports: [MachineTimeline],
+  imports: [MachineTimeline, NgIcon],
+  viewProviders: [
+    provideIcons({
+      lucideBot,
+      lucideChartColumn,
+      lucideDownload,
+      lucideLightbulb,
+      lucideLink,
+      lucideShare2,
+      lucideStar,
+      lucideTrophy,
+      lucideUpload,
+    }),
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './factory-panels.scss',
   template: `
-    <h3>💡 Hint</h3>
+    <h3><ng-icon name="lucideLightbulb" /> Hint</h3>
     <p class="note">Stuck? Get the one change that would make your draft earn the most.</p>
     <button
       type="button"
@@ -30,7 +55,11 @@ import { MachineTimeline } from './machine-timeline';
       (click)="store.askHint()"
       [disabled]="store.hinting() || !store.check()?.valid"
     >
-      {{ store.hinting() ? 'Thinking…' : '💡 Get a hint' }}
+      @if (store.hinting()) {
+        Thinking…
+      } @else {
+        <ng-icon name="lucideLightbulb" /> Get a hint
+      }
     </button>
     @if (store.hint(); as hint) {
       @if (hint.found) {
@@ -46,17 +75,17 @@ import { MachineTimeline } from './machine-timeline';
             off.
           </p>
           <button type="button" class="soft" (click)="openAuto.emit()">
-            See what 🤖 Auto builds
+            See what <ng-icon name="lucideBot" /> Auto builds
           </button>
         </div>
       }
     }
 
-    <h3>🏆 How did you do?</h3>
+    <h3><ng-icon name="lucideTrophy" /> How did you do?</h3>
     @if (score(); as s) {
       <p class="stars" [attr.aria-label]="s.stars + ' of 3 stars'">
         @for (i of [0, 1, 2]; track i) {
-          <span [class.lit]="i < s.stars">★</span>
+          <ng-icon name="lucideStar" [class.lit]="i < s.stars" />
         }
       </p>
       <div class="meter" aria-hidden="true">
@@ -70,7 +99,7 @@ import { MachineTimeline } from './machine-timeline';
       <p class="note">Test your own factory to get a score.</p>
     }
 
-    <h3>📊 Timeline</h3>
+    <h3><ng-icon name="lucideChartColumn" /> Timeline</h3>
     @if (store.viewedTest(); as t) {
       <p class="note">{{ t.name }}: what each machine did, hour by hour. Click to jump.</p>
       <app-machine-timeline
@@ -87,12 +116,16 @@ import { MachineTimeline } from './machine-timeline';
       <p class="note">Play back a test to see each machine hour by hour.</p>
     }
 
-    <h3>🔗 Share and save</h3>
+    <h3><ng-icon name="lucideShare2" /> Share and save</h3>
     <div class="row-buttons">
-      <button type="button" class="soft" (click)="copyLink()">🔗 Copy share link</button>
-      <button type="button" class="soft" (click)="exportDesign()">⬇ Export</button>
+      <button type="button" class="soft" (click)="copyLink()">
+        <ng-icon name="lucideLink" /> Copy share link
+      </button>
+      <button type="button" class="soft" (click)="exportDesign()">
+        <ng-icon name="lucideDownload" /> Export
+      </button>
       <label class="soft file">
-        ⬆ Import
+        <ng-icon name="lucideUpload" /> Import
         <input type="file" accept="application/json,.json" (change)="importDesign($event)" />
       </label>
     </div>

@@ -32,11 +32,12 @@ struct HourReport {
   int hour = 0;
   Cents revenue = 0;
   Cents purchases = 0;
-  Cents profit = 0;                   ///< cumulative, starting at minus the build cost
-  std::vector<std::int64_t> sold;     ///< units sold this hour, per resource
-  std::vector<MachineHour> machines;  ///< per design machine, in design order
-  std::vector<int> belt_moved;        ///< units dispatched this hour, per design belt
-  std::vector<std::int64_t> stock;    ///< supplier stock after Dispatch, per supplier
+  Cents profit = 0;                     ///< cumulative, starting at minus the build cost
+  std::vector<std::int64_t> sold;       ///< units sold this hour, per resource
+  std::vector<MachineHour> machines;    ///< per design machine, in design order
+  std::vector<int> belt_moved;          ///< units dispatched this hour, per design belt
+  std::vector<std::int64_t> stock;      ///< supplier stock after Dispatch, per supplier
+  std::vector<std::int64_t> delivered;  ///< units delivered (and paid for), per supplier
 
   bool operator==(const HourReport&) const = default;
 };

@@ -13,17 +13,16 @@ describe('App shell', () => {
     });
   });
 
-  it('shows the brand and the server status, with no separate modes', async () => {
+  it('has no header or separate modes, just the page', async () => {
     const fixture = TestBed.createComponent(App);
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
-    http.expectOne('/api/health').flush({ status: 'ok' });
     await fixture.whenStable();
     http.match(() => true).forEach((r) => r.flush([]));
     await fixture.whenStable();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('.brand-name')?.textContent).toContain('ProcessForge');
+    expect(el.querySelector('header')).toBeNull();
     expect(el.querySelectorAll('nav a')).toHaveLength(0);
-    expect(el.querySelector('.server-status')?.textContent).toContain('Server online');
+    expect(el.querySelector('main#main')).not.toBeNull();
   });
 });

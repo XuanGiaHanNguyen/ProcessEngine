@@ -17,53 +17,6 @@
   }
 }
 
-.app-header {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 0.6rem 1.25rem;
-  background: var(--header-bg);
-  color: #fff;
-  flex-wrap: wrap;
-}
-
-.brand {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-}
-.logo {
-  font-size: 1.3rem;
-}
-.brand-name {
-  font-weight: 700;
-  font-size: 1.15rem;
-}
-.tagline {
-  opacity: 0.85;
-  font-size: 0.85rem;
-}
-
-.server-status {
-  margin-left: auto;
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-.dot {
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 50%;
-  background: #cbd5e1;
-  &.ok {
-    background: #4ade80;
-  }
-  &.bad {
-    background: #f87171;
-  }
-}
-
 main {
   flex: 1;
   padding: 1rem 1.25rem 2rem;
@@ -72,7 +25,7 @@ main {
   margin: 0 auto;
   box-sizing: border-box;
   outline: none;
-  // Factory mode is a full-bleed canvas.
+  // The factory is a full-bleed floor.
   &:has(> app-factory-page) {
     padding: 0;
     max-width: none;

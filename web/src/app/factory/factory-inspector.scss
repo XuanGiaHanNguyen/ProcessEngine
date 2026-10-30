@@ -3,24 +3,27 @@
 }
 
 h3 {
-  font-size: 1rem;
+  font-family: var(--fun);
+  font-weight: 600;
+  font-size: 1.1rem;
   margin: 0 0 0.6rem;
 }
 h4 {
   font-size: 0.85rem;
   margin: 0.9rem 0 0.3rem;
-  color: #e5dcff;
+  font-family: var(--fun);
+  font-weight: 600;
 }
 p {
   margin: 0 0 0.5rem;
 }
 .sub {
-  color: #e5dcff;
+  color: var(--muted);
   font-size: 0.85rem;
 }
 .hint {
   font-size: 0.8rem;
-  color: #e5dcff;
+  color: var(--muted);
 }
 .slot-id {
   font-weight: 400;
@@ -33,13 +36,15 @@ p {
   gap: 0.3rem;
   margin-bottom: 0.6rem;
   font-size: 0.85rem;
-  color: #e5dcff;
+  font-weight: 600;
+  color: var(--muted);
   select,
   input[type='number'] {
     font: inherit;
-    color: #1b1530;
-    border-radius: 6px;
-    border: none;
+    color: var(--ink);
+    background: #fff;
+    border-radius: 8px;
+    border: 2px solid var(--ink);
     padding: 0.25rem 0.4rem;
   }
 }
@@ -49,7 +54,7 @@ p {
   align-items: center;
   input[type='range'] {
     flex: 1;
-    accent-color: #ffd54a;
+    accent-color: var(--green);
   }
   input[type='number'] {
     width: 4.2rem;
@@ -64,7 +69,7 @@ dl {
   font-size: 0.9rem;
 }
 dt {
-  color: #e0d6ff;
+  color: var(--muted);
 }
 dd {
   margin: 0;
@@ -79,8 +84,9 @@ dd {
 }
 .chip {
   display: inline-block;
-  background: rgba(0, 0, 0, 0.28);
-  border-radius: 999px;
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
   padding: 0.15rem 0.55rem;
   margin: 0.15rem 0.2rem 0.15rem 0;
   font-size: 0.85rem;
@@ -96,7 +102,7 @@ table {
   margin-bottom: 0.5rem;
 }
 th {
-  color: #e5dcff;
+  color: var(--muted);
   font-weight: 600;
   text-transform: none;
   letter-spacing: 0;
@@ -106,7 +112,7 @@ th,
 td {
   text-align: left;
   padding: 0.3rem 0.2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  border-bottom: 1px solid var(--line);
 }
 
 button {
@@ -114,65 +120,26 @@ button {
   cursor: pointer;
 }
 .danger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   margin-top: 0.9rem;
   width: 100%;
   padding: 0.5rem;
-  border-radius: 10px;
-  border: 1px solid #ffb4b4;
-  background: rgba(120, 20, 40, 0.55);
+  border-radius: 8px;
+  border: 2px solid var(--ink);
+  background: var(--red);
   color: #fff;
-  font-weight: 600;
+  font: 600 0.95rem var(--fun);
+  box-shadow: 0 3px 0 var(--ink);
   &:hover,
   &:focus-visible {
-    background: rgba(160, 30, 55, 0.8);
+    background: #f0513f;
   }
-}
-
-.check-row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  font-size: 0.85rem;
-  margin-bottom: 0.5rem;
-}
-
-.build-menu {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-  button {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    text-align: left;
-    padding: 0.45rem 0.6rem;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    background: rgba(0, 0, 0, 0.22);
-    color: #fff;
-    &:hover,
-    &:focus-visible {
-      background: #2f5bd6;
-      border-color: #9db6ff;
-    }
-  }
-  .big-icon {
-    font-size: 1.4rem;
-  }
-  .what {
-    flex: 1;
-    display: grid;
-    font-size: 0.85rem;
-    span {
-      color: #e5dcff;
-      font-size: 0.78rem;
-    }
-  }
-  .price {
-    font-weight: 700;
+  &:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 var(--ink);
   }
 }
 
@@ -182,16 +149,20 @@ button {
   gap: 0.6rem;
   margin: 0.4rem 0 0.6rem;
   button {
+    display: grid;
+    place-items: center;
+    padding: 0;
     width: 30px;
     height: 30px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(0, 0, 0, 0.3);
-    color: #fff;
+    border-radius: 7px;
+    border: 2px solid var(--ink);
+    background: #fff;
+    color: var(--ink);
     font-size: 1.1rem;
+    box-shadow: 0 2px 0 var(--ink);
     &:hover,
     &:focus-visible {
-      background: #2f5bd6;
+      background: var(--yellow);
     }
   }
   strong {
@@ -210,15 +181,19 @@ button {
   button {
     width: 100%;
     text-align: left;
-    border: none;
+    border: 2px solid var(--ink);
     border-radius: 8px;
     padding: 0.3rem 0.5rem;
-    background: rgba(0, 0, 0, 0.2);
-    color: #fff;
+    background: #fff;
+    color: var(--ink);
     font-size: 0.8rem;
     &:hover,
     &:focus-visible {
-      background: rgba(0, 0, 0, 0.4);
+      background: var(--yellow-soft);
     }
   }
+}
+
+ng-icon {
+  vertical-align: -0.15em;
 }

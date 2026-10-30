@@ -92,7 +92,7 @@ TEST_F(ServerTest, HealthAndSolverList) {
 
 TEST_F(ServerTest, FactoryLevels) {
   const Json levels = get(port_, "/api/factory/levels").json();
-  ASSERT_EQ(levels.size(), 2U);
+  ASSERT_EQ(levels.size(), 3U);
   EXPECT_EQ(levels[0]["id"], "first-stitch");
   const Json level = get(port_, "/api/factory/levels/first-stitch").json();
   EXPECT_EQ(level["format"], "processforge-factory/1");

@@ -1,9 +1,46 @@
+// The factory screen's look matches the 3D floor: cream "toy" panels with a thick ink outline
+// and a solid drop shadow (like the floor's zoom buttons), a yellow and black hazard stripe
+// like the floor's edge, and buttons in the floor's colors. The tokens are inherited by the
+// inspector and the Auto and Play tabs.
 :host {
+  --ink: #1f2430;
+  --paper: #fffaf0;
+  --paper-2: #f4ecd8;
+  --line: rgba(31, 36, 48, 0.14);
+  --muted: #5a5f6d;
+  --red: #e2412f;
+  --red-dark: #a3281b;
+  --green: #3fae4a;
+  --green-dark: #2a7a32;
+  --blue: #2f6fd6;
+  --blue-dark: #1d4c9e;
+  --yellow: #ffd84a;
+  --yellow-soft: #fff1b8;
+  --fun: 'Fredoka', ui-rounded, system-ui, sans-serif;
+  --hazard: repeating-linear-gradient(-45deg, var(--yellow) 0 9px, var(--ink) 9px 18px);
+
   display: block;
-  height: calc(100dvh - var(--header-h, 52px));
+  height: 100dvh;
   min-height: 480px;
-  color: #f3f4f7;
-  background: #23262e;
+  color: var(--ink);
+  background: #9fd27a;
+}
+
+// Chunky toy buttons: a colored face on a solid ink shadow that presses down when clicked.
+%toy-button {
+  border: 2px solid var(--ink);
+  border-radius: 7px;
+  color: #fff;
+  font: 600 0.95rem var(--fun);
+  box-shadow: 0 3px 0 var(--ink);
+  cursor: pointer;
+  transition:
+    transform 0.06s,
+    box-shadow 0.06s;
+  &:not(:disabled):active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 var(--ink);
+  }
 }
 
 .stage {
@@ -20,15 +57,19 @@
 .load-error {
   margin: 0;
   padding: 0.6rem 1rem;
-  background: #5a1d1d;
+  background: var(--red);
+  color: #fff;
+  font-weight: 600;
 }
 
 .panel {
-  background: rgba(17, 19, 24, 0.94);
-  border: 1px solid #2d313b;
-  border-radius: 14px;
-  padding: 0.9rem 1rem;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  background:
+    var(--hazard) top / 100% 8px no-repeat,
+    var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  padding: calc(0.8rem + 8px) 1rem 0.9rem;
+  box-shadow: 0 5px 0 var(--ink);
 }
 
 .left {
@@ -39,7 +80,7 @@
   width: min(300px, calc(100% - 24px));
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   pointer-events: none;
   > * {
     pointer-events: auto;
@@ -51,86 +92,164 @@
   top: 12px;
   right: 12px;
   width: min(290px, calc(100% - 24px));
-  max-height: calc(100% - 24px);
+  // Stops above the floor's zoom buttons in the bottom right corner.
+  max-height: calc(100% - 170px);
   overflow: auto;
 }
 
-.purple {
-  background: #5a2fc2;
-  border: 2px solid #c9b6ff;
+h2,
+h3 {
+  font-family: var(--fun);
+  font-weight: 600;
 }
-
 h2 {
-  font-size: 1.15rem;
+  font-size: 1.35rem;
   margin: 0.35rem 0 0.4rem;
 }
 h3 {
-  font-size: 1rem;
+  font-size: 1.1rem;
   margin: 0 0 0.6rem;
 }
 p {
   margin: 0 0 0.5rem;
-  color: #d9dce3;
 }
 
 .eyebrow {
+  display: inline-block;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  color: #fff;
-  margin: 0.2rem 0;
+  color: var(--ink);
+  background: var(--yellow);
+  border-radius: 5px;
+  padding: 0.05rem 0.5rem;
+  margin: 0.2rem 0 0.4rem;
 }
 
-.level-tabs {
+// Pill tabs (levels, and Build / Auto / Play): the active one is a raised yellow button.
+.level-tabs,
+.panel-tabs {
   display: flex;
   gap: 4px;
-  padding: 3px;
-  background: #22262f;
-  border-radius: 999px;
+  padding: 4px;
+  background: var(--paper-2);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
   button {
     flex: 1;
-    padding: 0.3rem 0.6rem;
-    border: none;
-    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0.3rem 0.4rem;
+    border: 2px solid transparent;
+    border-radius: 5px;
     background: none;
-    color: #c9cdd6;
-    font: inherit;
-    font-weight: 600;
+    color: var(--ink);
+    font: 600 0.95rem var(--fun);
     cursor: pointer;
     &.active {
-      background: #5b3fd6;
-      color: #fff;
+      background: var(--yellow);
+      border-color: var(--ink);
+      box-shadow: 0 2px 0 var(--ink);
     }
     &:not(.active):hover,
-    &:focus-visible {
-      background: #343a48;
-      color: #fff;
+    &:not(.active):focus-visible {
+      background: #fff;
     }
+  }
+}
+.level-tabs {
+  margin-bottom: 0.8rem;
+}
+.panel-tabs {
+  flex: 1;
+}
+
+.right-head {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+  margin: 0 0 0.9rem;
+}
+
+// Folds the right panel away, or back out from the rail.
+.fold {
+  @extend %toy-button;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  padding: 0;
+  background: #fff;
+  color: var(--ink);
+  font-size: 1.15rem;
+  &:hover,
+  &:focus-visible {
+    background: var(--yellow);
+  }
+}
+
+// The collapsed right panel: a slim strip of buttons, one per tab.
+.right-rail {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: calc(0.5rem + 8px) 0.45rem 0.5rem;
+  button {
+    @extend %toy-button;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    background: #fff;
+    color: var(--ink);
+    font-size: 1.2rem;
+    &.active {
+      background: var(--yellow);
+    }
+    &:hover:not(.active),
+    &:focus-visible:not(.active) {
+      background: var(--yellow-soft);
+    }
+  }
+  .fold {
+    height: 30px;
+    margin-bottom: 4px;
   }
 }
 
 .target {
-  color: #9ec1ff;
+  color: var(--muted);
   strong {
-    color: #fff;
+    color: var(--green-dark);
+    font-family: var(--fun);
+    font-size: 1.1rem;
   }
 }
 
 .tests {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   h3 {
     margin-bottom: 0.5rem;
   }
   ul {
     list-style: none;
-    margin: 0 -1rem;
+    margin: 0 -1rem -0.9rem;
     padding: 0;
-    border-top: 1px solid #2d313b;
+    border-top: 2px solid var(--ink);
     max-height: 46vh;
     overflow: auto;
   }
-  li {
-    border-bottom: 1px solid #2d313b;
+  li + li {
+    border-top: 1px solid var(--line);
   }
 }
 
@@ -139,13 +258,13 @@ p {
   justify-content: space-between;
   align-items: baseline;
   .link:disabled {
-    color: #9aa1b0;
+    color: var(--muted);
     cursor: default;
   }
 }
 .bound {
   font-size: 0.78rem;
-  color: #9aa1b0;
+  color: var(--muted);
   margin: 0 0 0.5rem;
 }
 
@@ -156,36 +275,38 @@ p {
   padding: 0.55rem 1rem;
   background: none;
   border: none;
-  color: #7fb0ff;
+  border-radius: 0;
+  color: var(--ink);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
   &.active {
-    background: #1d2130;
-    color: #fff;
+    background: var(--yellow-soft);
   }
-  &:hover,
-  &:focus-visible {
-    background: #252a38;
+  &:hover:not(.active),
+  &:focus-visible:not(.active) {
+    background: var(--paper-2);
   }
   .amount {
-    color: #fff;
-    font-weight: 700;
+    color: var(--green-dark);
+    font-family: var(--fun);
+    font-size: 1.05rem;
   }
 }
 .neg {
-  color: #ff9b9b !important;
+  color: var(--red-dark) !important;
 }
 
 .playback {
-  padding: 0 1rem 0.8rem;
-  background: #1d2130;
+  padding: 0.2rem 1rem 0.9rem;
+  background: var(--yellow-soft);
   display: grid;
   gap: 0.5rem;
   .hour-line {
     display: flex;
     justify-content: space-between;
-    color: #d9dce3;
+    font-family: var(--fun);
+    font-weight: 600;
   }
   .sold-line {
     margin: 0;
@@ -201,66 +322,66 @@ p {
   grid-template-columns: 1.3fr 0.6fr 1.3fr 0.6fr;
   gap: 6px;
   button {
-    padding: 0.5rem 0.3rem;
-    border-radius: 9px;
-    border: none;
-    background: #2f5bd6;
-    color: #fff;
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
+    @extend %toy-button;
+    padding: 0.4rem 0.3rem;
+    background: var(--blue);
     &:hover,
     &:focus-visible {
-      background: #4471f0;
+      background: #4583ea;
+    }
+    &.play {
+      background: var(--green);
+      &:hover,
+      &:focus-visible {
+        background: #4cc457;
+      }
     }
   }
 }
 
 .wide {
+  @extend %toy-button;
   width: 100%;
-  padding: 0.5rem;
-  border-radius: 9px;
-  border: none;
-  background: #2b3250;
-  color: #fff;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
+  padding: 0.45rem;
+  background: #fff;
+  color: var(--ink);
   &:hover,
   &:focus-visible {
-    background: #3b4470;
+    background: var(--yellow);
   }
 }
 
 .primary {
+  @extend %toy-button;
   width: 100%;
   margin-top: 0.6rem;
   padding: 0.6rem;
-  border-radius: 10px;
-  border: none;
-  background: #2fae5f;
-  color: #fff;
-  font: inherit;
-  font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
+  border-radius: 8px;
+  background: var(--green);
+  font-size: 1.1rem;
+  box-shadow: 0 4px 0 var(--ink);
   &:disabled {
-    background: #3a4a40;
-    color: #a7b3ab;
+    background: #b9c2b3;
+    color: #eef1ec;
+    border-color: #7d8579;
+    box-shadow: 0 4px 0 #7d8579;
     cursor: default;
   }
   &:not(:disabled):hover,
   &:not(:disabled):focus-visible {
-    background: #38c46c;
+    background: #4cc457;
   }
 }
 
 .link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: none;
   border: none;
-  color: #7fb0ff;
-  font: inherit;
-  font-weight: 600;
+  padding: 0;
+  color: var(--blue-dark);
+  font: 600 1rem var(--fun);
   cursor: pointer;
   &:hover,
   &:focus-visible {
@@ -269,15 +390,19 @@ p {
 }
 
 .hour-status {
-  font-weight: 600;
+  display: inline-block;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 0.1rem 0.6rem;
+  border: 2px solid var(--ink);
   &.busy {
-    color: #b6f5c9;
+    background: #c9efc4;
   }
   &.blocked {
-    color: #ffc2c2;
+    background: #ffc9c2;
   }
   &.starved {
-    color: #ffe9a6;
+    background: var(--yellow-soft);
   }
 }
 
@@ -288,11 +413,11 @@ p {
   margin: 0.4rem 0 0.8rem;
   font-size: 0.9rem;
   dt {
-    color: #e0d6ff;
+    color: var(--muted);
   }
   dd {
     margin: 0;
-    font-weight: 600;
+    font-weight: 700;
     text-align: right;
   }
 }
@@ -320,40 +445,46 @@ p {
 }
 .tools {
   display: flex;
-  gap: 4px;
+  gap: 5px;
   button {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    border: 1px solid #3a3f4c;
-    background: #22262f;
-    color: #fff;
+    @extend %toy-button;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 7px;
+    background: #fff;
+    color: var(--ink);
     font-size: 1rem;
-    cursor: pointer;
     &:disabled {
       opacity: 0.35;
       cursor: default;
     }
     &:not(:disabled):hover,
     &:not(:disabled):focus-visible {
-      background: #5b3fd6;
+      background: var(--yellow);
     }
   }
 }
 
 .build {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   margin: 0.6rem 0 0.4rem;
+  color: var(--muted);
+  strong {
+    color: var(--ink);
+  }
 }
 
 .status {
   font-weight: 700;
   margin: 0.2rem 0;
   &.ok {
-    color: #7ee0a1;
+    color: var(--green-dark);
   }
   &.bad {
-    color: #ff9b9b;
+    color: var(--red-dark);
   }
 }
 
@@ -364,10 +495,10 @@ p {
   max-height: 9rem;
   overflow: auto;
   &.bad {
-    color: #ffc9c9;
+    color: var(--red-dark);
   }
   &.warn {
-    color: #ffe08a;
+    color: #7a5600;
   }
 }
 
@@ -377,18 +508,20 @@ p {
   bottom: 18px;
   transform: translateX(-50%);
   max-width: min(520px, calc(100% - 24px));
-  background: #15171c;
-  border: 1px solid #e3bd3b;
+  background: var(--paper);
+  border: 3px solid var(--ink);
   border-radius: 10px;
+  box-shadow: 0 4px 0 var(--ink);
   padding: 0.55rem 2.2rem 0.55rem 0.9rem;
   font-size: 0.9rem;
+  font-weight: 600;
   button {
     position: absolute;
     right: 6px;
     top: 4px;
     background: none;
     border: none;
-    color: #fff;
+    color: var(--ink);
     font-size: 1.2rem;
     cursor: pointer;
   }
@@ -404,27 +537,33 @@ p {
     align-items: flex-start;
     padding: 0.4rem 0;
   }
+  li + li {
+    border-top: 1px dashed var(--line);
+  }
   .check {
     flex: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 2px solid var(--ink);
     background: #fff;
-    margin-top: 1px;
-    color: #5a2fc2;
+    color: #fff;
     font-weight: 800;
     font-size: 0.8rem;
     display: grid;
     place-items: center;
   }
+  .met .check {
+    background: var(--green);
+  }
   .met {
-    opacity: 0.85;
+    color: var(--muted);
   }
 }
 
 .hint {
   font-size: 0.8rem;
-  color: #e5dcff;
+  color: var(--muted);
 }
 
 @media (max-width: 760px) {
@@ -441,53 +580,37 @@ p {
   }
 }
 
-.panel-tabs {
-  display: flex;
-  gap: 3px;
-  padding: 3px;
-  margin: -0.2rem -0.3rem 0.8rem;
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 999px;
-  button {
-    flex: 1;
-    padding: 0.3rem 0.4rem;
-    border: none;
-    border-radius: 999px;
-    background: none;
-    color: #e6defc;
-    font: inherit;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    &.active {
-      background: #fff;
-      color: #4b1fa8;
-    }
-    &:not(.active):hover,
-    &:focus-visible {
-      background: rgba(255, 255, 255, 0.18);
-      color: #fff;
-    }
-  }
-}
-
 .speed {
   display: flex;
   gap: 4px;
   button {
     flex: 1;
-    padding: 0.25rem;
-    border-radius: 7px;
-    border: 1px solid #3a4160;
-    background: none;
-    color: #c9cdd6;
-    font: inherit;
-    font-size: 0.8rem;
+    padding: 0.2rem;
+    border-radius: 6px;
+    border: 2px solid var(--ink);
+    background: #fff;
+    color: var(--ink);
+    font: 600 0.85rem var(--fun);
     cursor: pointer;
     &.active {
-      background: #2f5bd6;
-      border-color: #2f5bd6;
-      color: #fff;
+      background: var(--yellow);
     }
   }
+}
+
+// Lucide icons sit on the text baseline at the text's size.
+ng-icon {
+  vertical-align: -0.15em;
+}
+.transport button,
+.primary,
+.wide,
+.test-row span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.test-row span:first-child {
+  justify-content: flex-start;
 }

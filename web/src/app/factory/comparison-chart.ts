@@ -59,20 +59,20 @@ const PAD = { top: 6, right: 8, bottom: 20 };
       fill: #3fae6a;
     }
     .comparison-chart .bar.solver rect {
-      fill: #7fb0ff;
+      fill: #2f6fd6;
     }
     .comparison-chart .bar.initial rect {
       fill: #8b90a0;
     }
     .comparison-chart .bar.active rect {
-      stroke: #fff;
+      stroke: #1f2430;
       stroke-width: 2;
     }
     .comparison-chart .bar:hover rect {
       filter: brightness(1.2);
     }
     .comparison-chart text {
-      fill: #f3f4f7;
+      fill: #1f2430;
       font-size: 10.5px;
     }
     .comparison-chart .value {
@@ -83,10 +83,10 @@ const PAD = { top: 6, right: 8, bottom: 20 };
       stroke-dasharray: 4 3;
     }
     .comparison-chart .ref.target line {
-      stroke: #ffd447;
+      stroke: #d9a400;
     }
     .comparison-chart .ref.bound line {
-      stroke: #ff9b9b;
+      stroke: #e2412f;
     }
     .comparison-chart .ref text {
       font-size: 9.5px;

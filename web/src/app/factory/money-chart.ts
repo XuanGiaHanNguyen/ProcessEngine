@@ -45,14 +45,14 @@ const PAD = { left: 4, right: 4, top: 8, bottom: 8 };
       display: block;
       width: 100%;
       height: auto;
-      background: #1f3fbf;
-      border: 1px solid #6d8bff;
-      border-radius: 8px;
+      background: #2f6fd6;
+      border: 2px solid #1f2430;
+      border-radius: 10px;
       cursor: pointer;
       outline: none;
     }
     .money-chart:focus-visible {
-      outline: 2px solid #fff;
+      outline: 2px solid #1f2430;
     }
     .money-chart .area {
       fill: rgba(255, 255, 255, 0.28);
@@ -72,7 +72,7 @@ const PAD = { left: 4, right: 4, top: 8, bottom: 8 };
     }
     .money-chart .knob {
       fill: #ffd54a;
-      stroke: #1f3fbf;
+      stroke: #1f2430;
       stroke-width: 2;
     }
   `,

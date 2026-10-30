@@ -6,13 +6,13 @@ import { expect, test } from './fixtures';
 test.use({ reducedMotion: 'reduce' });
 
 function node(page: Page, label: string) {
-  return page.locator(`g.node[aria-label="${label}"]`);
+  return page.locator(`.node[aria-label="${label}"]`);
 }
 
 /** Drags from one node to another with the mouse, as a player lays a belt. */
 async function dragBelt(page: Page, from: string, to: string) {
-  const a = await node(page, from).locator('circle.disc').boundingBox();
-  const b = await node(page, to).locator('circle.disc').boundingBox();
+  const a = await node(page, from).locator('.disc').boundingBox();
+  const b = await node(page, to).locator('.disc').boundingBox();
   if (!a || !b) throw new Error('node not visible');
   const [x1, y1, x2, y2] = [
     a.x + a.width / 2,
@@ -52,36 +52,31 @@ test('edit, test and play back a factory', async ({ page, problems }) => {
   await dragBelt(page, 'Carder: Card stuffing', 'Market');
   await expect(page.locator('.toast')).toContainText('Nothing to carry');
 
-  // Build a second sewing station and order less cotton.
-  await node(page, 'Empty slot s4').click();
-  await page.getByRole('button', { name: 'Build Sewing station: Sew stuffed animals' }).click();
-  await expect(page.locator('g.node.machine')).toHaveCount(4);
+  // Order less cotton. There is nothing to build: empty slots are not shown.
+  await expect(page.locator('.node.machine')).toHaveCount(3);
+  await expect(page.locator('.node.slot')).toHaveCount(0);
   await node(page, 'Cotton').click();
   await page.getByLabel('Order per hour (number)').fill('7');
   await page.getByLabel('Order per hour (number)').press('Enter');
-  await expect(page.locator('g.node.supplier .badge-main').first()).toHaveText('7/h');
-  await expect(page.locator('.draft .build')).toContainText('$32,500');
+  await expect(page.locator('.node.supplier .badge-main').first()).toHaveText('7/h');
+  await expect(page.locator('.draft .build')).toContainText('$22,500');
 
   // Test it: the result is scored by the server and played back from hour 1.
-  await page.getByRole('button', { name: '▶ Test factory' }).click();
+  await page.getByRole('button', { name: 'Test factory' }).click();
   await expect(page.locator('.test-row.active')).toContainText('Test 1');
-  await expect(page.locator('.test-row.active')).toContainText('$49,900');
+  await expect(page.locator('.test-row.active')).toContainText('$12,900');
   await expect(page.locator('.hour-line')).toContainText('Hour 1');
   for (let i = 0; i < 11; i++) await page.getByRole('button', { name: 'Next hour' }).click();
   await expect(page.locator('.hour-line')).toContainText('Hour 12');
-  await expect(page.locator('.sold-line')).toContainText('🧸');
+  await expect(page.locator('.sold-line')).toContainText(/\d/);
 
   // What a machine is doing in this hour.
-  await node(page, 'Sewing station: Sew stuffed animals').first().click();
+  await node(page, 'Sewing station: Sew stuffed animals').click();
   await expect(page.locator('.hour-status')).toContainText(/Working|Waiting|Blocked/);
 
   // Objectives tick off from the tests and stepped hours.
   const met = page.locator('.objectives li.met');
-  await expect(met).toContainText([
-    'Test the factory',
-    'Step through at least 6 hours of a test',
-    'Earn $45,000',
-  ]);
+  await expect(met).toContainText(['Test the factory', 'Step through at least 6 hours of a test']);
 
   // Back to editing from the test.
   await page.getByRole('button', { name: 'Edit from Test 1' }).click();
@@ -91,19 +86,19 @@ test('edit, test and play back a factory', async ({ page, problems }) => {
 
 test('auto-build with the optimizers, inside the factory', async ({ page, problems }) => {
   await openLevelOne(page);
-  await page.getByRole('button', { name: '🤖 Auto' }).click();
+  await page.getByRole('button', { name: 'Auto', exact: true }).click();
   await expect(page.getByRole('tab', { name: /Auto/ })).toHaveAttribute('aria-selected', 'true');
   await page.getByLabel('Time each').selectOption('1000');
   await page.getByRole('checkbox', { name: /flow_lp/ }).uncheck();
-  await page.getByRole('button', { name: '🤖 Run optimizers' }).click();
+  await page.getByRole('button', { name: 'Run optimizers' }).click();
   await expect(page.locator('p.bound')).toContainText('No factory can earn more than', {
     timeout: 20_000,
   });
   const rows = page.locator('.test-row');
-  await expect(rows.filter({ hasText: '🤖 local_search' })).toHaveCount(1);
-  await expect(rows.filter({ hasText: '🤖 greedy' })).toHaveCount(1);
-  await expect(rows.filter({ hasText: '🤖 flow_lp' })).toHaveCount(0);
-  await expect(page.locator('.test-row.active')).toContainText('🤖');
+  await expect(rows.filter({ hasText: 'local_search' })).toHaveCount(1);
+  await expect(rows.filter({ hasText: 'greedy' })).toHaveCount(1);
+  await expect(rows.filter({ hasText: 'flow_lp' })).toHaveCount(0);
+  await expect(page.locator('.test-row.active ng-icon[name="lucideBot"]')).toHaveCount(1);
   await expect(page.locator('.runs tbody tr')).toHaveCount(2);
   await expect(page.locator('.comparison-chart g.bar')).toHaveCount(3);
 
@@ -119,12 +114,12 @@ test('play helpers: hint, score, timeline and share link', async ({ page, proble
   await expect(page.getByText('Test your own factory to get a score.')).toBeVisible();
 
   // The hint is a real improvement; doing it changes the draft (undoably).
-  await page.getByRole('button', { name: '💡 Get a hint' }).click();
+  await page.getByRole('button', { name: 'Get a hint' }).click();
   await expect(page.locator('.card .gain')).toContainText('+$');
   await page.getByRole('button', { name: 'Do it' }).click();
   await expect(page.getByRole('button', { name: 'Undo' })).toBeEnabled();
 
-  await page.getByRole('button', { name: '▶ Test factory' }).click();
+  await page.getByRole('button', { name: 'Test factory' }).click();
   await expect(page.locator('.test-row.active')).toContainText('Test 1');
   await expect(page.locator('.stars')).toHaveAttribute('aria-label', /of 3 stars/);
   await expect(page.locator('.machine-timeline rect.cell').first()).toBeVisible();
@@ -145,11 +140,11 @@ test('play helpers: hint, score, timeline and share link', async ({ page, proble
       .replace(/=+$/, '');
     return `/factory?level=first-stitch&design=${b64}`;
   });
-  const sold = await page.locator('g.node.supplier .badge-main').allTextContents();
+  const sold = await page.locator('.node.supplier .badge-main').allTextContents();
   await page.evaluate(() => localStorage.clear());
   await page.goto(link);
   await expect(page.locator('.toast')).toContainText('Loaded a shared factory');
-  await expect(page.locator('g.node.supplier .badge-main')).toHaveText(sold);
+  await expect(page.locator('.node.supplier .badge-main')).toHaveText(sold);
   expect(problems).toEqual([]);
 });
 
@@ -167,5 +162,19 @@ test('drafts are remembered and levels can be switched', async ({ page, problems
   await expect(node(page, 'Rubber')).toBeVisible();
   await page.getByRole('tab', { name: /Easy/ }).click();
   await expect(page.getByRole('heading', { name: 'First Stitch' })).toBeVisible();
+  expect(problems).toEqual([]);
+});
+
+test('the right panel folds away to a rail and back', async ({ page, problems }) => {
+  await openLevelOne(page);
+  await page.getByRole('button', { name: 'Hide panel' }).click();
+  await expect(page.getByRole('tab', { name: /Build/ })).toBeHidden();
+  // A rail button opens its tab.
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByRole('tab', { name: /Play/ })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('button', { name: 'Hide panel' }).click();
+  // Selecting a machine on the floor unfolds it on Build, to show the inspector.
+  await page.locator('.node.machine').first().click({ force: true });
+  await expect(page.getByRole('button', { name: 'Remove machine' })).toBeVisible();
   expect(problems).toEqual([]);
 });

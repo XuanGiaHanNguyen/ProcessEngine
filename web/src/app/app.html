@@ -1,24 +1,4 @@
 <a class="skip-link" href="#main">Skip to content</a>
-<header class="app-header">
-  <div class="brand">
-    <span class="logo" aria-hidden="true">⚙</span>
-    <span class="brand-name">ProcessForge</span>
-    <span class="tagline">toy factory</span>
-  </div>
-  <div class="server-status" role="status">
-    @switch (online()) {
-      @case (true) {
-        <span class="dot ok" aria-hidden="true"></span> Server online
-      }
-      @case (false) {
-        <span class="dot bad" aria-hidden="true"></span> Server offline
-      }
-      @default {
-        <span class="dot" aria-hidden="true"></span> Connecting…
-      }
-    }
-  </div>
-</header>
 <main id="main" tabindex="-1">
   <router-outlet />
 </main>

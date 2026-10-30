@@ -6,6 +6,8 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideBot, lucideDownload, lucidePencil, lucidePlay } from '@ng-icons/lucide';
 
 import { ComparisonChart, ComparisonRow } from './comparison-chart';
 import { money } from './factory-models';
@@ -18,11 +20,12 @@ import { FactoryStore } from './factory-store';
  */
 @Component({
   selector: 'app-factory-auto',
-  imports: [ComparisonChart],
+  imports: [ComparisonChart, NgIcon],
+  viewProviders: [provideIcons({ lucideBot, lucideDownload, lucidePencil, lucidePlay })],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './factory-panels.scss',
   template: `
-    <h3>🤖 Auto-build</h3>
+    <h3><ng-icon name="lucideBot" /> Auto-build</h3>
     <p class="note">
       Let the optimizers design this factory. Each one's factory is added to your tests, to play
       back or edit.
@@ -41,10 +44,10 @@ import { FactoryStore } from './factory-store';
     <div class="options">
       <label>
         Time each
-        <select [value]="timeMs()" (change)="timeMs.set(+$any($event.target).value)">
-          <option [value]="1000">1 s</option>
-          <option [value]="3000">3 s</option>
-          <option [value]="10000">10 s</option>
+        <select (change)="timeMs.set(+$any($event.target).value)">
+          <option [value]="1000" [selected]="timeMs() === 1000">1 s</option>
+          <option [value]="3000" [selected]="timeMs() === 3000">3 s</option>
+          <option [value]="10000" [selected]="timeMs() === 10000">10 s</option>
         </select>
       </label>
       <label>
@@ -63,7 +66,11 @@ import { FactoryStore } from './factory-store';
       (click)="run()"
       [disabled]="store.comparing() || !picked().size"
     >
-      {{ store.comparing() ? 'Solving… ' + elapsed() + ' s' : '🤖 Run optimizers' }}
+      @if (store.comparing()) {
+        Solving… {{ elapsed() }} s
+      } @else {
+        <ng-icon name="lucideBot" /> Run optimizers
+      }
     </button>
     @if (store.comparing()) {
       <div
@@ -113,14 +120,14 @@ import { FactoryStore } from './factory-store';
                     (click)="store.view(r.testId)"
                     [attr.aria-label]="'Watch ' + r.solver"
                   >
-                    ▶
+                    <ng-icon name="lucidePlay" />
                   </button>
                   <button
                     type="button"
                     (click)="store.editFrom(r.testId)"
                     [attr.aria-label]="'Edit from ' + r.solver"
                   >
-                    ✎
+                    <ng-icon name="lucidePencil" />
                   </button>
                 }
               </td>
@@ -131,7 +138,9 @@ import { FactoryStore } from './factory-store';
       @if (store.bound(); as bound) {
         <p class="note">No factory can earn more than {{ money(bound) }} here.</p>
       }
-      <button type="button" class="soft" (click)="exportRuns()">⬇ Export results (JSON)</button>
+      <button type="button" class="soft" (click)="exportRuns()">
+        <ng-icon name="lucideDownload" /> Export results (JSON)
+      </button>
     }
   `,
 })
@@ -153,7 +162,7 @@ export class FactoryAuto {
   protected readonly rows = computed<ComparisonRow[]>(() =>
     this.store.tests().map((t) => ({
       id: t.id,
-      label: t.kind === 'solver' ? `🤖 ${t.name}` : t.name,
+      label: t.name,
       profit: t.result.profit,
       kind: t.kind,
     })),
