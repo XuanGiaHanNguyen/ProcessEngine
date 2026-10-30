@@ -11,6 +11,7 @@ import {
   output,
   viewChild,
 } from '@angular/core';
+import { drag } from 'd3-drag';
 import { scaleLinear } from 'd3-scale';
 import { Selection, select } from 'd3-selection';
 import { linkHorizontal } from 'd3-shape';
@@ -38,11 +39,16 @@ interface CanvasNode {
 /** A drawable belt between two node centers. */
 interface CanvasBelt {
   key: string;
+  index: number;
   resource: string;
+  weight: number;
   source: [number, number];
   target: [number, number];
   active: boolean;
 }
+
+/** What the canvas highlights: a node by id, or a belt by its index in the design. */
+export type CanvasSelection = { kind: 'node'; id: string } | { kind: 'belt'; index: number } | null;
 
 const UNIT_X = 64;
 const UNIT_Y = 58;
@@ -84,16 +90,22 @@ const R = 30;
 export class FactoryCanvas {
   readonly level = input<FactoryLevel | null>(null);
   readonly design = input<Design | null>(null);
-  readonly selected = input<string | null>(null);
+  readonly selection = input<CanvasSelection>(null);
+  /** Allow dragging from a supplier or machine to another node to lay belts. */
+  readonly editable = input(false);
   /** Animate items along belts. */
   readonly flowing = input(true);
   /** Pixels covered by overlays on the left and right, kept clear when fitting. */
   readonly insets = input<[number, number]>([0, 0]);
   readonly nodeSelected = output<string | null>();
+  readonly beltSelected = output<number>();
+  /** The user dragged from one node to another. */
+  readonly connect = output<{ from: string; to: string }>();
 
   private readonly svgRef = viewChild.required<ElementRef<SVGSVGElement>>('svg');
   private zoomBehavior?: ZoomBehavior<SVGSVGElement, unknown>;
   private bounds = { w: 0, h: 0 };
+  private nodes: CanvasNode[] = [];
   private flowTimer?: ReturnType<typeof setInterval>;
   private readonly reducedMotion =
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -112,7 +124,8 @@ export class FactoryCanvas {
     effect(() => {
       this.level();
       this.design();
-      this.selected();
+      this.selection();
+      this.editable();
       if (this.zoomBehavior) this.render();
     });
     let lastLevel: string | undefined;
@@ -238,13 +251,15 @@ export class FactoryCanvas {
 
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const belts: CanvasBelt[] = [];
-    for (const b of design?.belts ?? []) {
+    for (const [index, b] of (design?.belts ?? []).entries()) {
       const from = byId.get(b.from);
       const to = byId.get(b.to);
       if (!from || !to) continue;
       belts.push({
         key: `${b.from}>${b.to}:${b.resource}`,
+        index,
         resource: b.resource,
+        weight: b.weight ?? 1,
         source: [from.x + R, from.y],
         target: [to.x - R, to.y],
         active: from.active,
@@ -261,6 +276,7 @@ export class FactoryCanvas {
       .target((d) => d.target);
 
     const beltLayer = this.layer(vp, 'belts');
+    const sel = this.selection();
     const belt = beltLayer
       .selectAll<SVGGElement, CanvasBelt>('g.belt')
       .data(belts, (d) => d.key)
@@ -269,11 +285,36 @@ export class FactoryCanvas {
         g.append('path').attr('class', 'belt-edge');
         g.append('path').attr('class', 'belt-track');
         g.append('path').attr('class', 'belt-dash');
+        g.append('path').attr('class', 'belt-hit');
+        const tag = g.append('g').attr('class', 'belt-tag');
+        tag
+          .append('rect')
+          .attr('rx', 6)
+          .attr('x', -15)
+          .attr('y', -10)
+          .attr('width', 30)
+          .attr('height', 20);
+        tag.append('text').attr('dy', '0.35em');
         g.append('title');
+        g.on('click', (e: MouseEvent, d) => {
+          e.stopPropagation();
+          this.beltSelected.emit(d.index);
+        });
         return g;
       });
     belt.classed('idle', (d) => !d.active);
+    belt.classed('selected', (d) => sel?.kind === 'belt' && sel.index === d.index);
     belt.selectAll<SVGPathElement, CanvasBelt>('path').attr('d', (d) => link(d));
+    belt
+      .select('g.belt-tag')
+      .attr('display', (d) => (d.weight > 1 ? null : 'none'))
+      .attr('transform', (d) => {
+        const [x1, y1] = d.source;
+        const [x2, y2] = d.target;
+        return `translate(${(x1 + x2) / 2}, ${(y1 + y2) / 2})`;
+      })
+      .select('text')
+      .text((d) => `×${d.weight}`);
     belt.select('title').text((d) => d.key.replace('>', ' → ').replace(':', ' · '));
 
     this.layer(vp, 'items');
@@ -311,9 +352,12 @@ export class FactoryCanvas {
       });
     node
       .attr('class', (d) => `node ${d.kind}${d.active ? ' active' : ''}`)
-      .classed('selected', (d) => d.id === this.selected())
+      .classed('selected', (d) => sel?.kind === 'node' && sel.id === d.id)
+      .classed('source', (d) => this.editable() && (d.kind === 'supplier' || d.kind === 'machine'))
       .attr('transform', (d) => `translate(${d.x}, ${d.y})`)
       .attr('aria-label', (d) => d.title);
+    node.call(this.connector());
+    this.nodes = nodes;
     node.select('text.icon').text((d) => d.icon);
     node.select('title').text((d) => d.title);
     node.each(function (d) {
@@ -336,6 +380,45 @@ export class FactoryCanvas {
         .attr('width', w)
         .attr('height', d.sub ? 36 : 22);
     });
+  }
+
+  /**
+   * Drag from a supplier or machine to another node to lay a belt (d3-drag). A short drag
+   * still counts as a click, so nodes stay selectable.
+   */
+  private connector() {
+    const vp = () => select(this.svgRef().nativeElement).select<SVGGElement>('g.viewport');
+    const hit = (x: number, y: number, from: string) =>
+      this.nodes.find((n) => n.id !== from && Math.hypot(n.x - x, n.y - y) <= R + 8);
+    return drag<SVGGElement, CanvasNode>()
+      .filter(
+        (e: MouseEvent, d) =>
+          this.editable() && !e.button && (d.kind === 'supplier' || d.kind === 'machine'),
+      )
+      .clickDistance(6)
+      .on('start', (_e, d) => {
+        this.layer(vp(), 'drag')
+          .append('line')
+          .attr('class', 'drag-line')
+          .attr('x1', d.x)
+          .attr('y1', d.y)
+          .attr('x2', d.x)
+          .attr('y2', d.y);
+      })
+      .on('drag', (e: { x: number; y: number }, d) => {
+        vp().select('line.drag-line').attr('x2', e.x).attr('y2', e.y);
+        const target = hit(e.x, e.y, d.id);
+        vp()
+          .selectAll<SVGGElement, CanvasNode>('g.node')
+          .classed('drop-target', (n) => n.id === target?.id);
+      })
+      .on('end', (e: { x: number; y: number }, d) => {
+        vp().select('line.drag-line').remove();
+        vp().selectAll('g.node').classed('drop-target', false);
+        const target = hit(e.x, e.y, d.id);
+        if (target && Math.hypot(e.x - d.x, e.y - d.y) > R)
+          this.connect.emit({ from: d.id, to: target.id });
+      });
   }
 
   /** Sends one item along each active belt, as a D3 transition that follows the path. */

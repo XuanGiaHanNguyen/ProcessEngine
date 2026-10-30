@@ -31,6 +31,37 @@ app-factory-canvas {
     stroke-dasharray: 3 9;
     animation: pf-belt 0.9s linear infinite;
   }
+  .belt-hit {
+    stroke: transparent;
+    stroke-width: 20;
+    pointer-events: stroke;
+    cursor: pointer;
+  }
+  .belt.selected {
+    .belt-edge {
+      stroke: #b9a4ff;
+      stroke-width: 17;
+    }
+  }
+  .belt-tag {
+    pointer-events: none;
+    rect {
+      fill: #15171c;
+      stroke: #e3bd3b;
+    }
+    text {
+      fill: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      text-anchor: middle;
+    }
+  }
+  .drag-line {
+    stroke: #b9a4ff;
+    stroke-width: 4;
+    stroke-dasharray: 8 6;
+    pointer-events: none;
+  }
   .belt.idle {
     .belt-track {
       stroke: #6f6340;
@@ -111,6 +142,10 @@ app-factory-canvas {
     &:focus-visible .disc {
       stroke: #b9a4ff;
       stroke-width: 3;
+    }
+    &.drop-target .disc {
+      stroke: #6be08a;
+      stroke-width: 5;
     }
     &.selected .disc {
       stroke: #a77bff;

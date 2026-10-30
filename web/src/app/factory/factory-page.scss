@@ -119,58 +119,88 @@ p {
   }
 }
 
-.tests {
-  ul {
-    list-style: none;
-    margin: 0 -1rem 0.6rem;
-    padding: 0;
-    border-top: 1px solid #2d313b;
-  }
-  li {
-    border-bottom: 1px solid #2d313b;
+.draft-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  h3 {
+    margin: 0;
   }
 }
-
-.test-row {
-  width: 100%;
+.tools {
   display: flex;
-  justify-content: space-between;
-  padding: 0.6rem 1rem;
-  background: none;
-  border: none;
-  color: #7fb0ff;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  &.active {
-    background: #1d2130;
+  gap: 4px;
+  button {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid #3a3f4c;
+    background: #22262f;
     color: #fff;
-  }
-  &:hover,
-  &:focus-visible {
-    background: #252a38;
-  }
-  .amount {
-    color: #fff;
-    font-weight: 700;
-    &.neg {
-      color: #ff9b9b;
+    font-size: 1rem;
+    cursor: pointer;
+    &:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+    &:not(:disabled):hover,
+    &:not(:disabled):focus-visible {
+      background: #5b3fd6;
     }
   }
 }
 
-.spark-placeholder {
-  border: 1px dashed #3d4352;
-  border-radius: 8px;
-  padding: 0.8rem;
-  font-size: 0.8rem;
-  color: #9aa1b0;
-  margin-bottom: 0.6rem;
-}
-
 .build {
   font-size: 0.85rem;
-  margin: 0;
+  margin: 0.6rem 0 0.4rem;
+}
+
+.status {
+  font-weight: 700;
+  margin: 0.2rem 0;
+  &.ok {
+    color: #7ee0a1;
+  }
+  &.bad {
+    color: #ff9b9b;
+  }
+}
+
+.issues {
+  margin: 0.3rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  max-height: 9rem;
+  overflow: auto;
+  &.bad {
+    color: #ffc9c9;
+  }
+  &.warn {
+    color: #ffe08a;
+  }
+}
+
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  max-width: min(520px, calc(100% - 24px));
+  background: #15171c;
+  border: 1px solid #e3bd3b;
+  border-radius: 10px;
+  padding: 0.55rem 2.2rem 0.55rem 0.9rem;
+  font-size: 0.9rem;
+  button {
+    position: absolute;
+    right: 6px;
+    top: 4px;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
 }
 
 .objectives {
@@ -198,71 +228,6 @@ p {
   color: #e5dcff;
 }
 
-.inspector {
-  position: relative;
-  .close {
-    position: absolute;
-    right: -4px;
-    top: -6px;
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 1.4rem;
-    cursor: pointer;
-  }
-  dl {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.3rem 0.8rem;
-    margin: 0.6rem 0 0;
-  }
-  dt {
-    color: #e0d6ff;
-  }
-  dd {
-    margin: 0;
-    font-weight: 600;
-  }
-  .recipe-name {
-    color: #e5dcff;
-  }
-  .recipe {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4rem;
-  }
-  .chip {
-    display: inline-block;
-    background: rgba(0, 0, 0, 0.28);
-    border-radius: 999px;
-    padding: 0.15rem 0.55rem;
-    margin: 0.15rem 0.2rem 0.15rem 0;
-    font-size: 0.85rem;
-  }
-  .arrow {
-    font-weight: 700;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-  }
-  th {
-    color: #e5dcff;
-    font-weight: 600;
-    text-transform: none;
-    letter-spacing: 0;
-    font-size: 0.8rem;
-  }
-  th,
-  td {
-    text-align: left;
-    padding: 0.3rem 0.2rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
-  }
-}
-
 @media (max-width: 760px) {
   .right {
     top: auto;
@@ -272,7 +237,7 @@ p {
   .left {
     bottom: auto;
   }
-  .tests {
+  .draft {
     display: none;
   }
 }

@@ -20,7 +20,14 @@ import {
   Timeline,
   ValidateResult,
 } from './models';
-import { FactoryLevel, FactoryLevelInfo } from '../factory/factory-models';
+import {
+  Design,
+  DesignCheck,
+  FactoryLevel,
+  FactoryLevelInfo,
+  FactorySolveResponse,
+  SimResult,
+} from '../factory/factory-models';
 
 /** An API failure with the server's machine code and human reason. */
 export class ApiError extends Error {
@@ -93,6 +100,22 @@ export class ApiService {
   }
   factoryLevel(id: string): Promise<FactoryLevel> {
     return this.get(`/api/factory/levels/${encodeURIComponent(id)}`);
+  }
+  validateDesign(level: string, design: Design): Promise<DesignCheck> {
+    return this.post('/api/factory/validate', { level, design });
+  }
+  simulateDesign(
+    level: string,
+    design: Design,
+  ): Promise<{ result: SimResult; warnings: DesignCheck['warnings'] }> {
+    return this.post('/api/factory/simulate', { level, design });
+  }
+  solveFactory(
+    level: string,
+    solvers: string[],
+    timeLimitMs: number,
+  ): Promise<FactorySolveResponse> {
+    return this.post('/api/factory/solve', { level, solvers, timeLimitMs });
   }
   validateInstance(instance: Instance): Promise<ValidateResult> {
     return this.post('/api/instances/validate', instance);

@@ -110,3 +110,67 @@ export function money(cents: number): string {
   const sign = cents < 0 ? '-' : '';
   return `${sign}$${(Math.abs(cents) / 100).toFixed(2)}`;
 }
+
+export interface DesignIssue {
+  code: string;
+  message: string;
+}
+
+/** POST /api/factory/validate */
+export interface DesignCheck {
+  valid: boolean;
+  errors: DesignIssue[];
+  warnings: DesignIssue[];
+  build: number;
+}
+
+export type MachineStatus = 'busy' | 'blocked' | 'starved';
+
+export interface MachineHour {
+  slot: string;
+  status: MachineStatus;
+  progress: number;
+  total: number;
+  missing: string[];
+  inputs: Record<string, number>;
+  outputs: Record<string, number>;
+  batches_done: number;
+}
+
+export interface HourReport {
+  hour: number;
+  revenue: number;
+  purchases: number;
+  profit: number;
+  sold: Record<string, number>;
+  machines: MachineHour[];
+  belts: number[];
+  stock: Record<string, number>;
+}
+
+/** The per-hour report of POST /api/factory/simulate. */
+export interface SimResult {
+  profit: number;
+  sales: number;
+  purchases: number;
+  build: number;
+  sold: Record<string, number>;
+  hours: HourReport[];
+}
+
+export interface FactorySolverResult {
+  solver_name: string;
+  profit: number;
+  runtime_ms: number;
+  valid: boolean;
+  error: string | null;
+  stats: Record<string, number>;
+  design: Design;
+}
+
+/** POST /api/factory/solve */
+export interface FactorySolveResponse {
+  bound: number;
+  boundSolved: boolean;
+  results: FactorySolverResult[];
+}
