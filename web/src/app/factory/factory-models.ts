@@ -105,10 +105,15 @@ export interface FactoryLevelInfo {
   description: string;
 }
 
-/** Formats integer cents as dollars ("$16.20", "-$3.00"). */
+/** Formats integer cents as dollars with thousands separators ("$165,800", "$16.20"). */
 export function money(cents: number): string {
   const sign = cents < 0 ? '-' : '';
-  return `${sign}$${(Math.abs(cents) / 100).toFixed(2)}`;
+  const abs = Math.abs(cents);
+  const digits = abs % 100 === 0 ? 0 : 2;
+  return `${sign}$${(abs / 100).toLocaleString('en-US', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  })}`;
 }
 
 export interface DesignIssue {
@@ -174,3 +179,14 @@ export interface FactorySolveResponse {
   boundSolved: boolean;
   results: FactorySolverResult[];
 }
+
+/** GET /api/factory/solvers */
+export interface FactorySolverInfo {
+  name: string;
+  description: string;
+}
+
+/** POST /api/factory/hint: the best single change, or found=false if none helps. */
+export type DesignHint =
+  | { found: false }
+  | { found: true; description: string; profit: number; gain: number; design: Design };

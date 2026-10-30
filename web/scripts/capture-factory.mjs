@@ -58,12 +58,37 @@ for (let h = 0; h < 13; h++) {
 }
 await shot(2);
 
-// Compare with the optimizers.
+// Hover a machine: only its belts stay lit.
 await page.keyboard.press('Escape');
-await page.getByRole('button', { name: '🤖 Compare' }).click();
-await page.locator('.bound').waitFor({ timeout: 30000 });
-await page.waitForTimeout(800);
+await node('Loom: Weave fabric').hover({ force: true });
+await page.waitForTimeout(400);
 await shot(3);
+await page.mouse.move(5, 300);
+
+// Auto: let the optimizers build it.
+await page.getByRole('tab', { name: /Auto/ }).click();
+await page.getByLabel('Time each').selectOption('1000');
+await shot(1);
+await page.getByRole('button', { name: '🤖 Run optimizers' }).click();
+await page.locator('.runs').waitFor({ timeout: 30000 });
+await page.waitForTimeout(900);
+await shot(3);
+await page.screenshot({ path: `${out}/factory-auto.png` });
+
+// Play: a hint, the score and the machine timeline.
+await page.locator('.runs').getByRole('button', { name: 'Edit from greedy' }).click();
+await page.getByRole('tab', { name: /Play/ }).click();
+await page.getByRole('button', { name: '▶ Test factory' }).click();
+await page.locator('.machine-timeline rect.cell').first().waitFor();
+await page.getByRole('button', { name: 'Continue editing' }).click();
+await page.getByRole('button', { name: '💡 Get a hint' }).click();
+await page.locator('.card').waitFor();
+await page.waitForTimeout(400);
+await shot(3);
+await page.locator('.test-row', { hasText: 'Test 2' }).click();
+await page.waitForTimeout(500);
+await shot(3);
+await page.screenshot({ path: `${out}/factory-play.png` });
 
 await browser.close();
 console.log(`captured ${frame} frames into ${out}/frames`);

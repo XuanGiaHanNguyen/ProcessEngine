@@ -92,10 +92,10 @@ TEST(FactoryLevels, FirstStitchInitialMatchesTheHandCalculation) {
   const Level l = level(doc);
   const Design d = design(l, doc["reference_designs"][0]["design"]);
   const SimResult r = simulate(l, d);
-  EXPECT_EQ(r.sales, 16200);
-  EXPECT_EQ(r.purchases, 10080);
-  EXPECT_EQ(r.build, 4500);
-  EXPECT_EQ(r.profit, 1620);
+  EXPECT_EQ(r.sales, 8100000);
+  EXPECT_EQ(r.purchases, 5040000);
+  EXPECT_EQ(r.build, 2250000);
+  EXPECT_EQ(r.profit, 810000);
   const Index animal = *l.findResource("stuffed-animal");
   EXPECT_EQ(r.sold[animal], 18);
   for (int h = 0; h < 24; ++h) {

@@ -237,15 +237,16 @@ level by id.
 | POST | `/api/factory/validate` | `{level, design}` | `{valid, errors: [{code, message}], warnings: [{code, message}], build}` (always 200) |
 | POST | `/api/factory/simulate` | `{level, design}` | `{result, warnings}`; an invalid design is 422 `invalid_design` with `errors` |
 | POST | `/api/factory/solve` | `{level, solvers, timeLimitMs?, seed?}` | `{bound, boundSolved, results: [{solver_name, profit, runtime_ms, valid, error, stats, design}]}` |
+| POST | `/api/factory/hint` | `{level, design}` | `{found: true, description, profit, gain, design}` or `{found: false}`; an invalid design is 422 `invalid_design` |
 
 `result` (from `simulate`):
 
 ```json
 {
-  "profit": 1620, "sales": 16200, "purchases": 10080, "build": 4500,
+  "profit": 810000, "sales": 8100000, "purchases": 5040000, "build": 2250000,
   "sold": {"stuffed-animal": 18},
   "hours": [
-    {"hour": 6, "revenue": 1800, "purchases": 420, "profit": -5640,
+    {"hour": 6, "revenue": 900000, "purchases": 210000, "profit": -2820000,
      "sold": {"stuffed-animal": 2},
      "machines": [{"slot": "s1", "status": "busy", "progress": 1, "total": 1,
                    "missing": [], "inputs": {"cotton": 3, "string": 2},

@@ -1,5 +1,6 @@
 #include "server.hpp"
 
+#include "pf/factory/hint.hpp"
 #include "pf/factory/json.hpp"
 #include "pf/factory/sim.hpp"
 #include "pf/factory/solvers.hpp"
@@ -771,6 +772,34 @@ void Server::registerFactoryRoutes() {
             200, {{"result", factory::json::toJson(result, level->level, *parsed.design)},
                   {"warnings", factory::json::issuesToJson(
                                    factory::designWarnings(level->level, *parsed.design))}});
+      });
+
+  CROW_ROUTE(app_, "/api/factory/hint")
+      .methods("POST"_method)([this, findLevel](const crow::request& req) {
+        crow::response error;
+        const auto body = parseBody(req, config_.max_body_bytes, error);
+        if (!body) return error;
+        const FactoryLevelFile* level = findLevel(*body, error);
+        if (level == nullptr) return error;
+        const auto parsed =
+            factory::json::parseDesign(body->value("design", Json::object()), level->level);
+        if (!parsed.design) {
+          return errorResponse(422, "invalid_design", parsed.errors.front().message,
+                               {{"errors", factory::json::issuesToJson(parsed.errors)}});
+        }
+        const auto issues = factory::checkDesign(level->level, *parsed.design);
+        if (!issues.empty()) {
+          return errorResponse(422, "invalid_design", issues.front().message,
+                               {{"errors", factory::json::issuesToJson(issues)}});
+        }
+        const auto hint = factory::suggestChange(level->level, *parsed.design);
+        if (!hint) return jsonResponse(200, {{"found", false}});
+        return jsonResponse(200,
+                            {{"found", true},
+                             {"description", hint->description},
+                             {"profit", hint->profit},
+                             {"gain", hint->gain},
+                             {"design", factory::json::designToJson(hint->design, level->level)}});
       });
 
   CROW_ROUTE(app_, "/api/factory/solve")

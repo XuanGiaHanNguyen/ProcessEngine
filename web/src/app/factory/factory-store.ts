@@ -2,7 +2,15 @@ import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core'
 
 import { ApiService } from '../api/api.service';
 import * as ops from './design-ops';
-import { Design, DesignCheck, FactoryLevel, FactoryLevelInfo, SimResult } from './factory-models';
+import {
+  Design,
+  DesignCheck,
+  DesignHint,
+  FactoryLevel,
+  FactoryLevelInfo,
+  FactorySolverInfo,
+  SimResult,
+} from './factory-models';
 import { objectiveMet } from './objectives';
 
 /** What is selected on the floor: a node (supplier, slot or market) or a belt. */
@@ -17,9 +25,47 @@ export interface TestRun {
   result: SimResult;
 }
 
+/** One optimizer's result from an Auto run, linked to the test that plays it back. */
+export interface AutoRun {
+  solver: string;
+  profit: number;
+  runtimeMs: number;
+  testId: number | null;
+  error: string | null;
+}
+
 const HISTORY_LIMIT = 100;
 const MAX_TESTS = 20;
 const PLAY_INTERVAL_MS = 700;
+
+/** Encodes a design for a share link (URL-safe base64 of its JSON). */
+export function encodeDesign(design: Design): string {
+  const bytes = new TextEncoder().encode(JSON.stringify(design));
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** Decodes encodeDesign()'s output, or null if it is not a design. */
+export function decodeDesign(text: string): Design | null {
+  try {
+    const bin = atob(text.replace(/-/g, '+').replace(/_/g, '/'));
+    const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    return asDesign(JSON.parse(new TextDecoder().decode(bytes)));
+  } catch {
+    return null;
+  }
+}
+
+/** `value` if it has the shape of a design (or wraps one as {design}), else null. */
+export function asDesign(value: unknown): Design | null {
+  const v = (value as { design?: unknown })?.design ?? value;
+  const d = v as Partial<Design> | null;
+  if (!d || typeof d !== 'object') return null;
+  if (typeof d.orders !== 'object' || !Array.isArray(d.machines) || !Array.isArray(d.belts))
+    return null;
+  return { orders: d.orders ?? {}, machines: d.machines, belts: d.belts };
+}
 
 function storageGet(key: string): string | null {
   try {
@@ -61,8 +107,17 @@ export class FactoryStore {
   readonly playing = signal(false);
   readonly testing = signal(false);
   readonly comparing = signal(false);
-  /** Upper bound on any design's profit, from the last comparison. */
+  /** Upper bound on any design's profit, from the last Auto run. */
   readonly bound = signal<number | null>(null);
+  /** The optimizers the server offers. */
+  readonly solvers = signal<FactorySolverInfo[]>([]);
+  /** Results of the last Auto run. */
+  readonly autoRuns = signal<AutoRun[]>([]);
+  /** The last hint for the draft (cleared when the draft changes). */
+  readonly hint = signal<DesignHint | null>(null);
+  readonly hinting = signal(false);
+  /** Playback speed: hours per tick of PLAY_INTERVAL_MS / speed. */
+  readonly speed = signal(1);
   /** Distinct hours the player has stepped or played through (for "step" objectives). */
   private readonly stepped = signal<number[]>([]);
   private playTimer?: ReturnType<typeof setInterval>;
@@ -98,16 +153,41 @@ export class FactoryStore {
     inject(DestroyRef).onDestroy(() => clearInterval(this.playTimer));
   }
 
-  async init(): Promise<void> {
+  /**
+   * Loads the levels and opens the last one played, or the level and design of a share
+   * link (`?level=…&design=…`).
+   */
+  async init(shared?: { level: string | null; design: string | null }): Promise<void> {
     try {
       const levels = await this.api.factoryLevels();
       this.levels.set(levels);
+      void this.api
+        .factorySolvers()
+        .then((s) => this.solvers.set(s))
+        .catch(() => this.solvers.set([]));
       const last = storageGet('pf.factory.level');
-      const start = levels.find((l) => l.id === last) ?? levels[0];
-      if (start) await this.open(start.id);
+      const sharedLevel = levels.find((l) => l.id === shared?.level);
+      const start = sharedLevel ?? levels.find((l) => l.id === last) ?? levels[0];
+      if (!start) return;
+      await this.open(start.id);
+      const design = sharedLevel && shared?.design ? decodeDesign(shared.design) : null;
+      if (design) {
+        this.replaceDraft(design);
+        this.message.set('Loaded a shared factory. Test it to see how it does.');
+      } else if (sharedLevel && shared?.design) {
+        this.message.set('That share link is broken, so the saved draft is shown instead.');
+      }
     } catch (e) {
       this.error.set(e instanceof Error ? e.message : String(e));
     }
+  }
+
+  /** A link that opens this level with the draft loaded. */
+  shareLink(origin: string): string {
+    const level = this.level();
+    const draft = this.draft();
+    if (!level || !draft) return origin;
+    return `${origin}/factory?level=${encodeURIComponent(level.id)}&design=${encodeDesign(draft)}`;
   }
 
   /** Loads a level and its remembered draft (or the initial design). */
@@ -189,32 +269,70 @@ export class FactoryStore {
   }
 
   /**
-   * Runs the factory solvers and adds each one's design as a test, so the player can play
-   * them back like their own.
+   * Auto: runs the chosen optimizers and adds each one's design as a test, so the player
+   * can play them back like their own, then plays back the best.
    */
-  async compare(timeLimitMs = 3000): Promise<void> {
+  async runAuto(
+    solvers = ['greedy', 'local_search', 'flow_lp'],
+    timeLimitMs = 3000,
+    seed?: number,
+  ): Promise<void> {
     const level = this.level();
-    if (!level || this.comparing()) return;
+    if (!level || this.comparing() || !solvers.length) return;
     this.comparing.set(true);
     try {
-      const res = await this.api.solveFactory(
-        level.id,
-        ['greedy', 'local_search', 'flow_lp'],
-        timeLimitMs,
-      );
-      this.bound.set(res.bound);
+      const res = await this.api.solveFactory(level.id, solvers, timeLimitMs, seed);
+      // Shown in whole dollars, rounded down so it stays an upper bound.
+      this.bound.set(Math.floor(res.bound / 100) * 100);
       this.tests.update((list) => list.filter((t) => t.kind !== 'solver'));
+      const runs: AutoRun[] = [];
       let best: TestRun | null = null;
-      for (const r of res.results.filter((x) => x.valid)) {
-        const run = await this.addTest(r.solver_name, 'solver', r.design, false);
+      for (const r of res.results) {
+        const run = r.valid ? await this.addTest(r.solver_name, 'solver', r.design, false) : null;
+        runs.push({
+          solver: r.solver_name,
+          profit: r.profit,
+          runtimeMs: r.runtime_ms,
+          testId: run?.id ?? null,
+          error: r.valid ? null : (r.error ?? 'invalid design'),
+        });
         if (run && (!best || run.result.profit > best.result.profit)) best = run;
       }
+      this.autoRuns.set(runs);
       if (best) this.view(best.id);
     } catch (e) {
       this.message.set(e instanceof Error ? e.message : String(e));
     } finally {
       this.comparing.set(false);
     }
+  }
+
+  /** Asks the server for the single change that most improves the draft. */
+  async askHint(): Promise<void> {
+    const level = this.level();
+    const draft = this.draft();
+    if (!level || !draft || this.hinting()) return;
+    if (!this.check()?.valid) {
+      this.message.set('Fix the problems in the draft first, then ask for a hint.');
+      return;
+    }
+    this.hinting.set(true);
+    try {
+      const hint = await this.api.factoryHint(level.id, draft);
+      if (this.draft() === draft) this.hint.set(hint);
+    } catch (e) {
+      this.message.set(e instanceof Error ? e.message : String(e));
+    } finally {
+      this.hinting.set(false);
+    }
+  }
+
+  /** Applies the current hint to the draft (undoable). */
+  applyHint(): void {
+    const hint = this.hint();
+    if (!hint?.found) return;
+    this.backToDraft();
+    this.replaceDraft(hint.design);
   }
 
   /** Plays back a test (the floor shows its design, read-only). */
@@ -267,7 +385,16 @@ export class FactoryStore {
     this.playTimer = setInterval(() => {
       if (this.hour() >= last) this.pause();
       else this.seek(this.hour() + 1);
-    }, PLAY_INTERVAL_MS);
+    }, PLAY_INTERVAL_MS / this.speed());
+  }
+
+  /** Changes the playback speed, keeping playback going if it is. */
+  setSpeed(speed: number): void {
+    this.speed.set(speed);
+    if (this.playing()) {
+      this.pause();
+      this.togglePlay();
+    }
   }
 
   pause(): void {
@@ -279,6 +406,7 @@ export class FactoryStore {
     this.tests.set([]);
     this.stepped.set([]);
     this.bound.set(null);
+    this.autoRuns.set([]);
     const saved = storageGet(`pf.factory.tests.${level.id}`);
     if (!saved) return;
     try {
@@ -351,6 +479,7 @@ export class FactoryStore {
 
   private setDraft(design: Design): void {
     this.draft.set(design);
+    this.hint.set(null);
     const level = this.level();
     if (level) storageSet(`pf.factory.draft.${level.id}`, JSON.stringify(design));
     const sel = this.selection();

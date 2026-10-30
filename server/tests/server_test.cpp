@@ -113,7 +113,7 @@ TEST_F(ServerTest, FactoryValidateAndSimulate) {
                        {{"level", "first-stitch"}, {"design", initial["design"]}})
                       .json();
   EXPECT_TRUE(ok["valid"]);
-  EXPECT_EQ(ok["build"], 4500);
+  EXPECT_EQ(ok["build"], 2250000);
   Json bad_design = initial["design"];
   bad_design["orders"]["cotton-supply"] = 999;
   const Json bad =
@@ -139,6 +139,29 @@ TEST_F(ServerTest, FactoryValidateAndSimulate) {
   EXPECT_EQ(post(port_, "/api/factory/simulate", {{"design", Json::object()}}).status, 400);
 }
 
+TEST_F(ServerTest, FactoryHint) {
+  const Json level = get(port_, "/api/factory/levels/first-stitch").json();
+  const Json& initial = level["reference_designs"][0];
+  const auto res =
+      post(port_, "/api/factory/hint", {{"level", "first-stitch"}, {"design", initial["design"]}});
+  ASSERT_EQ(res.status, 200);
+  const Json hint = res.json();
+  ASSERT_TRUE(hint["found"]);
+  EXPECT_GT(hint["gain"].get<std::int64_t>(), 0);
+  EXPECT_FALSE(hint["description"].get<std::string>().empty());
+  // The hinted design really earns what the hint says.
+  const Json sim =
+      post(port_, "/api/factory/simulate", {{"level", "first-stitch"}, {"design", hint["design"]}})
+          .json();
+  EXPECT_EQ(sim["result"]["profit"], hint["profit"]);
+
+  Json bad_design = initial["design"];
+  bad_design["orders"]["cotton-supply"] = 999;
+  EXPECT_EQ(
+      post(port_, "/api/factory/hint", {{"level", "first-stitch"}, {"design", bad_design}}).status,
+      422);
+}
+
 TEST_F(ServerTest, FactorySolve) {
   const auto res = post(
       port_, "/api/factory/solve",
@@ -148,7 +171,7 @@ TEST_F(ServerTest, FactorySolve) {
   ASSERT_EQ(body["results"].size(), 2U);
   for (const Json& r : body["results"]) {
     EXPECT_TRUE(r["valid"]);
-    EXPECT_GT(r["profit"].get<std::int64_t>(), 1620);
+    EXPECT_GT(r["profit"].get<std::int64_t>(), 810000);
     EXPECT_LE(r["profit"].get<std::int64_t>(), body["bound"].get<std::int64_t>());
     // The returned design scores the same when simulated.
     const Json sim =

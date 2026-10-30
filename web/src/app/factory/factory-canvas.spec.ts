@@ -62,6 +62,8 @@ describe('money', () => {
   it('formats cents as dollars', () => {
     expect(money(1620)).toBe('$16.20');
     expect(money(-305)).toBe('-$3.05');
-    expect(money(0)).toBe('$0.00');
+    expect(money(16580000)).toBe('$165,800');
+    expect(money(-250000)).toBe('-$2,500');
+    expect(money(0)).toBe('$0');
   });
 });

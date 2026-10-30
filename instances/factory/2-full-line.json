@@ -31,7 +31,7 @@
       "id": "cotton-supply",
       "resource": "cotton",
       "max_rate": 40,
-      "unit_cost": 40,
+      "unit_cost": 20000,
       "x": 0,
       "y": 0
     },
@@ -39,7 +39,7 @@
       "id": "string-supply",
       "resource": "string",
       "max_rate": 24,
-      "unit_cost": 25,
+      "unit_cost": 12500,
       "x": 0,
       "y": 2
     },
@@ -47,7 +47,7 @@
       "id": "plastic-supply",
       "resource": "plastic",
       "max_rate": 20,
-      "unit_cost": 50,
+      "unit_cost": 25000,
       "x": 0,
       "y": 4
     },
@@ -55,17 +55,17 @@
       "id": "rubber-supply",
       "resource": "rubber",
       "max_rate": 12,
-      "unit_cost": 60,
+      "unit_cost": 30000,
       "x": 0,
       "y": 6
     },
-    {"id": "wood-supply", "resource": "wood", "max_rate": 16, "unit_cost": 80, "x": 0, "y": 8}
+    {"id": "wood-supply", "resource": "wood", "max_rate": 16, "unit_cost": 40000, "x": 0, "y": 8}
   ],
   "machine_types": [
     {
       "id": "loom",
       "name": "Loom",
-      "cost": 1500,
+      "cost": 750000,
       "recipes": [
         {
           "id": "fabric",
@@ -79,7 +79,7 @@
     {
       "id": "carder",
       "name": "Carder",
-      "cost": 1000,
+      "cost": 500000,
       "recipes": [
         {
           "id": "stuffing",
@@ -93,7 +93,7 @@
     {
       "id": "sewing",
       "name": "Sewing station",
-      "cost": 2000,
+      "cost": 1000000,
       "recipes": [
         {
           "id": "stuffed-animal",
@@ -114,7 +114,7 @@
     {
       "id": "woodshop",
       "name": "Woodshop",
-      "cost": 1800,
+      "cost": 900000,
       "recipes": [
         {
           "id": "guitar-body",
@@ -135,7 +135,7 @@
     {
       "id": "molder",
       "name": "Molder",
-      "cost": 1200,
+      "cost": 600000,
       "recipes": [
         {
           "id": "pegs",
@@ -149,7 +149,7 @@
     {
       "id": "press",
       "name": "Press",
-      "cost": 1500,
+      "cost": 750000,
       "recipes": [
         {
           "id": "wheels",
@@ -163,7 +163,7 @@
     {
       "id": "workbench",
       "name": "Workbench",
-      "cost": 1200,
+      "cost": 600000,
       "recipes": [
         {
           "id": "chassis",
@@ -177,7 +177,7 @@
     {
       "id": "assembly",
       "name": "Assembly bench",
-      "cost": 2500,
+      "cost": 1250000,
       "recipes": [
         {
           "id": "toy-guitar",
@@ -200,11 +200,11 @@
     "x": 12,
     "y": 4,
     "listings": [
-      {"resource": "stuffed-animal", "price": 900, "demand": 3, "overflow_price": 500},
-      {"resource": "toy-guitar", "price": 2800, "demand": 1, "overflow_price": 1600},
-      {"resource": "toy-car", "price": 1300, "demand": 2, "overflow_price": 700},
-      {"resource": "offcut", "price": 10, "demand": 99, "overflow_price": 10},
-      {"resource": "kite", "price": 800, "demand": 2, "overflow_price": 450}
+      {"resource": "stuffed-animal", "price": 450000, "demand": 3, "overflow_price": 250000},
+      {"resource": "toy-guitar", "price": 1400000, "demand": 1, "overflow_price": 800000},
+      {"resource": "toy-car", "price": 650000, "demand": 2, "overflow_price": 350000},
+      {"resource": "offcut", "price": 5000, "demand": 99, "overflow_price": 5000},
+      {"resource": "kite", "price": 400000, "demand": 2, "overflow_price": 225000}
     ]
   },
   "slots": [
@@ -221,7 +221,7 @@
   ],
   "objectives": [
     {"kind": "sold", "resource": "toy-car", "at_least": 1, "text": "Sell a toy car"},
-    {"kind": "profit", "at_least": 28000, "text": "Earn $280"}
+    {"kind": "profit", "at_least": 14000000, "text": "Earn $140,000"}
   ],
   "reference_designs": [
     {
@@ -259,7 +259,7 @@
           {"from": "s7", "to": "market", "resource": "toy-guitar", "weight": 1}
         ]
       },
-      "profit": 21340
+      "profit": 10670000
     },
     {
       "name": "Best known",
@@ -308,7 +308,7 @@
         ],
         "orders": {"cotton-supply": 8, "plastic-supply": 1, "string-supply": 9, "wood-supply": 3}
       },
-      "profit": 33160
+      "profit": 16580000
     }
   ]
 }

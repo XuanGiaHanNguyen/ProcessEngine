@@ -422,7 +422,7 @@ by running the full 24-hour simulation (a few microseconds).
 | Name | Idea |
 |---|---|
 | `greedy` | From an empty floor, repeatedly add the *chain* (a machine plus producers for any input nobody makes yet) that raises profit most, tuning orders by coordinate descent after each add; stop when nothing helps, then drop machines whose removal helps. Deterministic. |
-| `local_search` | Simulated annealing from the greedy design: add a chain, remove a machine, swap a machine's recipe, or nudge one order; the temperature falls linearly over the time limit; the best design gets its orders re-tuned and is pruned. |
+| `local_search` | Simulated annealing from the greedy design: add a chain, remove a machine, swap a machine's recipe, or nudge one order; the temperature starts at the level's highest market price and falls linearly over the time limit; the best design gets its orders re-tuned and is pruned. |
 | `flow_lp` | Solve the flow LP below, keep its whole machine counts plus the largest fractional ones, take its order rates, then run the greedy from there. |
 
 **Upper bound (`flowUpperBound`).** A linear program over totals: batches `X_j` and machines
@@ -437,5 +437,19 @@ it is 2-3x the best designs found.
 
 | Level | Initial | `greedy` | `local_search` (3 s) | `flow_lp` | Bound |
 |---|---|---|---|---|---|
-| Easy: First Stitch | $16.20 | $99.80 | $116.20 | $116.20 | $317.51 |
-| Hard: Full Line | $213.40 | $311.40 | $321.80 | $230.00 | $795.69 |
+| Easy: First Stitch | $8,100 | $49,900 | $58,100 | $58,100 | $158,755 |
+| Hard: Full Line | $106,700 | $155,700 | $160,900 | $115,000 | $397,845 |
+
+### Factory hints
+
+`suggestChange` (`engine/src/factory/hint.cpp`, `POST /api/factory/hint`, the 💡 Play tab)
+tries every single change to the player's draft and returns the one that raises profit the
+most: one order up or down by 1 or 3, two orders by 1 together, a belt's split weight up or
+down, removing a belt, a new belt between any producer and consumer of a resource, removing a
+machine, and replacing a machine (another recipe or another type) or building one in an empty
+slot, belted to every producer and consumer, also tried with its orders re-tuned by
+coordinate descent. Every candidate is checked with `checkDesign` and scored with
+`simulate`, so a hint is always valid and its gain exact; it runs in tens of milliseconds.
+Following the hints from the initial design reaches the best known $58,100 on Easy; on Hard
+they climb from $106,700 to $116,300 and then report that no single change helps, which is
+where Auto's bigger rebuilds come in.

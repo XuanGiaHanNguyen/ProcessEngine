@@ -13,7 +13,7 @@ describe('App shell', () => {
     });
   });
 
-  it('shows the Factory / Auto / Play mode switch and the server status', async () => {
+  it('shows the brand and the server status, with no separate modes', async () => {
     const fixture = TestBed.createComponent(App);
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
@@ -22,8 +22,8 @@ describe('App shell', () => {
     http.match(() => true).forEach((r) => r.flush([]));
     await fixture.whenStable();
     const el = fixture.nativeElement as HTMLElement;
-    const links = [...el.querySelectorAll('nav a')].map((a) => a.textContent?.trim());
-    expect(links).toEqual(['Factory', 'Auto', 'Play']);
+    expect(el.querySelector('.brand-name')?.textContent).toContain('ProcessForge');
+    expect(el.querySelectorAll('nav a')).toHaveLength(0);
     expect(el.querySelector('.server-status')?.textContent).toContain('Server online');
   });
 });

@@ -1,0 +1,226 @@
+// Shared look of the Auto and Play tabs of the factory's right panel.
+:host {
+  display: block;
+}
+
+h3 {
+  font-size: 1rem;
+  margin: 1rem 0 0.4rem;
+  &:first-child {
+    margin-top: 0;
+  }
+}
+h4 {
+  font-size: 0.85rem;
+  margin: 0.9rem 0 0.3rem;
+}
+p {
+  margin: 0 0 0.5rem;
+}
+.note {
+  font-size: 0.85rem;
+  color: #e6defc;
+}
+
+button,
+.soft {
+  font: inherit;
+  cursor: pointer;
+}
+.go {
+  width: 100%;
+  padding: 0.55rem;
+  border-radius: 10px;
+  border: none;
+  background: #2fae5f;
+  color: #fff;
+  font-weight: 700;
+  &.small {
+    width: auto;
+    padding: 0.35rem 1rem;
+  }
+  &:disabled {
+    background: #4a3f78;
+    color: #c9bfec;
+    cursor: default;
+  }
+  &:not(:disabled):hover,
+  &:focus-visible {
+    background: #3cc570;
+  }
+}
+.soft {
+  display: inline-block;
+  padding: 0.4rem 0.7rem;
+  border-radius: 9px;
+  border: none;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  &:hover,
+  &:focus-within,
+  &:focus-visible {
+    background: rgba(255, 255, 255, 0.24);
+  }
+}
+.file input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.row-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.solver-list {
+  border: none;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+  legend {
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+  }
+  label {
+    display: flex;
+    gap: 0.45rem;
+    align-items: flex-start;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  small {
+    display: block;
+    color: #d8ccff;
+    font-size: 0.75rem;
+  }
+}
+.options {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+  label {
+    flex: 1;
+    display: grid;
+    gap: 0.2rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  select,
+  input {
+    font: inherit;
+    padding: 0.3rem;
+    border-radius: 7px;
+    border: 1px solid #c9b6ff;
+    background: #3d2096;
+    color: #fff;
+    min-width: 0;
+  }
+}
+.progress {
+  height: 6px;
+  margin-top: 0.5rem;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+  span {
+    display: block;
+    height: 100%;
+    background: #3cc570;
+    transition: width 0.25s linear;
+  }
+}
+
+.runs {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.6rem 0;
+  font-size: 0.82rem;
+  th {
+    text-align: left;
+    font-size: 0.75rem;
+    color: #d8ccff;
+  }
+  td,
+  th {
+    padding: 0.25rem 0.2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  }
+  .bad {
+    color: #ffc2c2;
+  }
+  .acts {
+    white-space: nowrap;
+    text-align: right;
+    button {
+      border: none;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
+      padding: 0.15rem 0.45rem;
+      &:hover,
+      &:focus-visible {
+        background: rgba(255, 255, 255, 0.3);
+      }
+    }
+  }
+}
+
+.card {
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.22);
+  .hint-text {
+    color: #fff;
+    font-weight: 600;
+  }
+  .gain {
+    color: #7dffa9;
+    font-weight: 700;
+  }
+}
+
+.stars {
+  font-size: 1.5rem;
+  letter-spacing: 0.15rem;
+  margin: 0;
+  span {
+    color: rgba(255, 255, 255, 0.25);
+    &.lit {
+      color: #ffd447;
+    }
+  }
+}
+.meter {
+  height: 8px;
+  margin: 0.3rem 0 0.5rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+  span {
+    display: block;
+    height: 100%;
+    background: #ffd447;
+  }
+}
+
+.legend {
+  font-size: 0.75rem;
+  color: #e6defc;
+  .busy {
+    color: #3fae6a;
+  }
+  .starved {
+    color: #a8892f;
+  }
+  .blocked {
+    color: #d9534f;
+  }
+}

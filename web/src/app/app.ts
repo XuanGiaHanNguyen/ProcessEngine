@@ -1,19 +1,17 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 
 import { ApiService } from './api/api.service';
-import { WorkspaceStore } from './state/workspace.store';
 
-/** App shell: header with the Auto / Play mode switch and server status. */
+/** App shell: header with the server status, and the factory below it. */
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App implements OnInit {
   private readonly api = inject(ApiService);
-  private readonly store = inject(WorkspaceStore);
   protected readonly online = signal<boolean | null>(null);
 
   async ngOnInit(): Promise<void> {
@@ -23,6 +21,5 @@ export class App implements OnInit {
     } catch {
       this.online.set(false);
     }
-    void this.store.loadCatalog();
   }
 }
