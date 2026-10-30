@@ -222,3 +222,41 @@ unknown_solver | invalid_options`, `404 job_not_found`, `413 payload_too_large`.
 - Errors: `400 invalid_json | invalid_action | invalid_schedule | unknown_solver`,
   `404 session_not_found | sample_not_found` (expired sessions are not found),
   `422` when a loaded schedule violates the rules, `503 session_limit`.
+
+### Factory mode
+
+Levels, designs and the per-hour report are defined in
+[factory-spec.md](factory-spec.md); their fields stay snake_case. Every body names a bundled
+level by id.
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/api/factory/levels` | | `[{id, name, description}]` |
+| GET | `/api/factory/levels/{id}` | | the level file as-is (with layout, objectives, reference designs); 404 `level_not_found` |
+| GET | `/api/factory/solvers` | | `[{name, description}]` |
+| POST | `/api/factory/validate` | `{level, design}` | `{valid, errors: [{code, message}], warnings: [{code, message}], build}` (always 200) |
+| POST | `/api/factory/simulate` | `{level, design}` | `{result, warnings}`; an invalid design is 422 `invalid_design` with `errors` |
+| POST | `/api/factory/solve` | `{level, solvers, timeLimitMs?, seed?}` | `{bound, boundSolved, results: [{solver_name, profit, runtime_ms, valid, error, stats, design}]}` |
+
+`result` (from `simulate`):
+
+```json
+{
+  "profit": 1620, "sales": 16200, "purchases": 10080, "build": 4500,
+  "sold": {"stuffed-animal": 18},
+  "hours": [
+    {"hour": 6, "revenue": 1800, "purchases": 420, "profit": -5640,
+     "sold": {"stuffed-animal": 2},
+     "machines": [{"slot": "s1", "status": "busy", "progress": 1, "total": 1,
+                   "missing": [], "inputs": {"cotton": 3, "string": 2},
+                   "outputs": {"fabric": 2}, "batches_done": 5}],
+     "belts": [5, 3, 2, 0, 0, 0, 0],
+     "stock": {"cotton-supply": 0, "string-supply": 4}}
+  ]
+}
+```
+
+`hours[].belts[i]` is the number of units design belt `i` carried that hour; `machines` follow
+the design's machine order. `solve` runs the solvers in parallel on the request (each limited
+to `timeLimitMs`, default 2000, capped at 10 000) and returns each design re-scored by the
+simulator, plus the flow LP upper bound `bound`.

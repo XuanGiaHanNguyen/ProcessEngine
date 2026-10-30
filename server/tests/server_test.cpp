@@ -90,6 +90,81 @@ TEST_F(ServerTest, HealthAndSolverList) {
   }
 }
 
+TEST_F(ServerTest, FactoryLevels) {
+  const Json levels = get(port_, "/api/factory/levels").json();
+  ASSERT_EQ(levels.size(), 5U);
+  EXPECT_EQ(levels[0]["id"], "first-stitch");
+  const Json level = get(port_, "/api/factory/levels/first-stitch").json();
+  EXPECT_EQ(level["format"], "processforge-factory/1");
+  EXPECT_EQ(level["slots"].size(), 5U);
+  EXPECT_EQ(get(port_, "/api/factory/levels/nope").status, 404);
+  EXPECT_EQ(get(port_, "/api/factory/solvers").json().size(), 3U);
+  // Factory levels are not scheduling samples.
+  for (const Json& s : get(port_, "/api/instances/samples").json()) {
+    EXPECT_NE(s["id"], "1-first-stitch");
+  }
+}
+
+TEST_F(ServerTest, FactoryValidateAndSimulate) {
+  const Json level = get(port_, "/api/factory/levels/first-stitch").json();
+  const Json& initial = level["reference_designs"][0];
+
+  const Json ok = post(port_, "/api/factory/validate",
+                       {{"level", "first-stitch"}, {"design", initial["design"]}})
+                      .json();
+  EXPECT_TRUE(ok["valid"]);
+  EXPECT_EQ(ok["build"], 4500);
+  Json bad_design = initial["design"];
+  bad_design["orders"]["cotton-supply"] = 999;
+  const Json bad =
+      post(port_, "/api/factory/validate", {{"level", "first-stitch"}, {"design", bad_design}})
+          .json();
+  EXPECT_FALSE(bad["valid"]);
+  EXPECT_EQ(bad["errors"][0]["code"], "order_out_of_range");
+
+  const auto sim = post(port_, "/api/factory/simulate",
+                        {{"level", "first-stitch"}, {"design", initial["design"]}});
+  ASSERT_EQ(sim.status, 200);
+  const Json result = sim.json()["result"];
+  EXPECT_EQ(result["profit"], initial["profit"]);
+  EXPECT_EQ(result["hours"].size(), 24U);
+  EXPECT_EQ(result["hours"][6]["sold"]["stuffed-animal"], 2);
+  EXPECT_EQ(result["hours"][1]["machines"][0]["status"], "busy");
+
+  const auto rejected =
+      post(port_, "/api/factory/simulate", {{"level", "first-stitch"}, {"design", bad_design}});
+  EXPECT_EQ(rejected.status, 422);
+  EXPECT_EQ(rejected.json()["error"], "invalid_design");
+  EXPECT_EQ(post(port_, "/api/factory/simulate", {{"level", "nope"}}).status, 404);
+  EXPECT_EQ(post(port_, "/api/factory/simulate", {{"design", Json::object()}}).status, 400);
+}
+
+TEST_F(ServerTest, FactorySolve) {
+  const auto res = post(
+      port_, "/api/factory/solve",
+      {{"level", "first-stitch"}, {"solvers", {"greedy", "local_search"}}, {"timeLimitMs", 300}});
+  ASSERT_EQ(res.status, 200);
+  const Json body = res.json();
+  ASSERT_EQ(body["results"].size(), 2U);
+  for (const Json& r : body["results"]) {
+    EXPECT_TRUE(r["valid"]);
+    EXPECT_GT(r["profit"].get<std::int64_t>(), 1620);
+    EXPECT_LE(r["profit"].get<std::int64_t>(), body["bound"].get<std::int64_t>());
+    // The returned design scores the same when simulated.
+    const Json sim =
+        post(port_, "/api/factory/simulate", {{"level", "first-stitch"}, {"design", r["design"]}})
+            .json();
+    EXPECT_EQ(sim["result"]["profit"], r["profit"]);
+  }
+  EXPECT_EQ(
+      post(port_, "/api/factory/solve", {{"level", "first-stitch"}, {"solvers", {"nope"}}}).status,
+      400);
+  EXPECT_EQ(post(port_, "/api/factory/solve",
+                 {{"level", "first-stitch"}, {"solvers", {"greedy"}}, {"timeLimitMs", -1}})
+                .status,
+            400);
+}
+
 TEST_F(ServerTest, SamplesValidateAndGenerate) {
   const Json samples = get(port_, "/api/instances/samples").json();
   EXPECT_GE(samples.size(), 6U);

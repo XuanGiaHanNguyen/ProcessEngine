@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pf/factory/level.hpp"
 #include "pf/model.hpp"
 
 #include <condition_variable>
@@ -62,6 +63,13 @@ struct Sample {
   Instance instance;
 };
 
+/// A bundled Factory-mode level (docs/factory-spec.md): the file as-is, and parsed.
+struct FactoryLevelFile {
+  std::string id;
+  nlohmann::json doc;
+  factory::Level level;
+};
+
 /// The HTTP + WebSocket API (docs/api.md) over the engine. Thin: requests are parsed and
 /// validated here, and all game rules and solving happen in the engine.
 class Server {
@@ -89,6 +97,7 @@ class Server {
   void registerRoutes();
   void registerSolveRoutes();
   void registerSessionRoutes();
+  void registerFactoryRoutes();
   void registerWebSocket();
   void shutdown();
 
@@ -97,6 +106,7 @@ class Server {
   JobManager jobs_;
   SessionStore sessions_;
   std::vector<Sample> samples_;
+  std::vector<FactoryLevelFile> factory_levels_;
 
   std::thread server_thread_;
   std::thread sweeper_;
