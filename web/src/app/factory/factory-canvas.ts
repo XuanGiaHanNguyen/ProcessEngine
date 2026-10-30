@@ -14,7 +14,6 @@ import {
 import { drag } from 'd3-drag';
 import { scaleLinear } from 'd3-scale';
 import { Selection, select } from 'd3-selection';
-import { linkHorizontal } from 'd3-shape';
 import 'd3-transition';
 import { ZoomBehavior, zoom, zoomIdentity } from 'd3-zoom';
 
@@ -46,6 +45,8 @@ interface CanvasBelt {
   weight: number;
   /** Units carried this hour during playback, else null. */
   moved: number | null;
+  /** x of the vertical run. */
+  bend: number;
   source: [number, number];
   target: [number, number];
   active: boolean;
@@ -54,14 +55,42 @@ interface CanvasBelt {
 /** What the canvas highlights: a node by id, or a belt by its index in the design. */
 export type CanvasSelection = { kind: 'node'; id: string } | { kind: 'belt'; index: number } | null;
 
-const UNIT_X = 64;
-const UNIT_Y = 58;
+const UNIT_X = 72;
+const UNIT_Y = 64;
 const R = 30;
+const CORNER = 12;
 
 /**
- * The factory floor, drawn with D3: zoom and pan (d3-zoom), belts as horizontal links
- * (d3-shape), grid-to-pixel scales (d3-scale), and items flowing along belts as D3
- * transitions. Angular owns the data; D3 owns the SVG under the viewport group.
+ * A belt as a straight conveyor: across, down (or up) at the midpoint, and across again,
+ * with rounded corners. Belts from one node share their vertical run, so they read as one
+ * conveyor that branches.
+ */
+export function beltPath(d: {
+  source: [number, number];
+  target: [number, number];
+  bend: number;
+}): string {
+  const [x1, y1] = d.source;
+  const [x2, y2] = d.target;
+  if (Math.abs(y2 - y1) < 1) return `M${x1},${y1}H${x2}`;
+  const xm = d.bend;
+  const dir = y2 > y1 ? 1 : -1;
+  const r = Math.min(CORNER, Math.abs(y2 - y1) / 2, Math.abs(xm - x1), Math.abs(x2 - xm));
+  const hx = x2 >= xm ? 1 : -1;
+  return [
+    `M${x1},${y1}`,
+    `H${xm - r}`,
+    `Q${xm},${y1} ${xm},${y1 + dir * r}`,
+    `V${y2 - dir * r}`,
+    `Q${xm},${y2} ${xm + hx * r},${y2}`,
+    `H${x2}`,
+  ].join('');
+}
+
+/**
+ * The factory floor, drawn with D3: zoom and pan (d3-zoom), straight conveyor belts,
+ * grid-to-pixel scales (d3-scale), belt laying by dragging (d3-drag), and items flowing
+ * along belts as D3 transitions. Angular owns the data; D3 owns the SVG under the viewport group.
  */
 @Component({
   selector: 'app-factory-canvas',
@@ -275,19 +304,52 @@ export class FactoryCanvas {
     });
 
     const byId = new Map(nodes.map((n) => [n.id, n]));
+    // Where to turn: in a gap between columns, preferring one whose two straight runs do
+    // not pass through other nodes, then the one nearest the source.
+    const columns = [...new Set(nodes.map((n) => n.x))].sort((a, b) => a - b);
+    const crosses = (y: number, xa: number, xb: number, skip: CanvasNode[]) =>
+      nodes.filter(
+        (n) =>
+          !skip.includes(n) &&
+          Math.abs(n.y - y) < R + 6 &&
+          n.x + R > Math.min(xa, xb) &&
+          n.x - R < Math.max(xa, xb),
+      ).length;
+    const bendFor = (from: CanvasNode, to: CanvasNode, x1: number, x2: number): number => {
+      if (x2 <= x1) return x1 + CORNER + 4;
+      const gaps = columns
+        .slice(0, -1)
+        .map((c, i) => (c + columns[i + 1]) / 2)
+        .filter((g) => g > x1 && g < x2);
+      if (!gaps.length) return (x1 + x2) / 2;
+      let best = gaps[0];
+      let bestHits = Infinity;
+      for (const g of gaps) {
+        const hits = crosses(from.y, x1, g, [from, to]) + crosses(to.y, g, x2, [from, to]);
+        if (hits < bestHits) {
+          best = g;
+          bestHits = hits;
+        }
+      }
+      return best;
+    };
     const belts: CanvasBelt[] = [];
     for (const [index, b] of (design?.belts ?? []).entries()) {
       const from = byId.get(b.from);
       const to = byId.get(b.to);
       if (!from || !to) continue;
+      const source: [number, number] = [from.x + R, from.y];
+      // A target in the same column (or to the left) is entered from its right side.
+      const target: [number, number] = to.x > from.x + R ? [to.x - R, to.y] : [to.x + R, to.y];
       belts.push({
         key: `${b.from}>${b.to}:${b.resource}`,
+        bend: bendFor(from, to, source[0], target[0]),
         index,
         resource: b.resource,
         weight: b.weight ?? 1,
         moved: report ? (report.belts[index] ?? 0) : null,
-        source: [from.x + R, from.y],
-        target: [to.x - R, to.y],
+        source,
+        target,
         active: report ? (report.belts[index] ?? 0) > 0 : from.active,
       });
     }
@@ -297,9 +359,6 @@ export class FactoryCanvas {
   private render(): void {
     const { nodes, belts } = this.model();
     const vp = select(this.svgRef().nativeElement).select<SVGGElement>('g.viewport');
-    const link = linkHorizontal<CanvasBelt, [number, number]>()
-      .source((d) => d.source)
-      .target((d) => d.target);
 
     const beltLayer = this.layer(vp, 'belts');
     const sel = this.selection();
@@ -330,16 +389,16 @@ export class FactoryCanvas {
       });
     belt.classed('idle', (d) => !d.active);
     belt.classed('selected', (d) => sel?.kind === 'belt' && sel.index === d.index);
-    belt.selectAll<SVGPathElement, CanvasBelt>('path').attr('d', (d) => link(d));
+    belt.selectAll<SVGPathElement, CanvasBelt>('path').attr('d', (d) => beltPath(d));
     belt
       .select('g.belt-tag')
       .attr('display', (d) =>
         (d.moved ?? 0) > 0 || (d.moved === null && d.weight > 1) ? null : 'none',
       )
       .attr('transform', (d) => {
-        const [x1, y1] = d.source;
+        // On the last straight run, just before the target.
         const [x2, y2] = d.target;
-        return `translate(${(x1 + x2) / 2}, ${(y1 + y2) / 2})`;
+        return `translate(${x2 - 22}, ${y2})`;
       })
       .select('text')
       .text((d) => (d.moved === null ? `×${d.weight}` : `${d.moved}`));

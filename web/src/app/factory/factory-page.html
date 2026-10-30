@@ -24,26 +24,18 @@
 
   <aside class="left" aria-label="Goal, tests and draft">
     <section class="panel goal">
-      <div class="level-nav">
-        <button
-          type="button"
-          (click)="step(-1)"
-          [disabled]="store.levelIndex() <= 0"
-          aria-label="Previous level"
-        >
-          ‹
-        </button>
-        <span class="level-label">
-          Level {{ store.levelIndex() + 1 }} of {{ store.levels().length }}
-        </span>
-        <button
-          type="button"
-          (click)="step(1)"
-          [disabled]="store.levelIndex() >= store.levels().length - 1"
-          aria-label="Next level"
-        >
-          ›
-        </button>
+      <div class="level-tabs" role="tablist" aria-label="Level">
+        @for (l of store.levels(); track l.id; let i = $index) {
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="store.level()?.id === l.id"
+            [class.active]="store.level()?.id === l.id"
+            (click)="store.open(l.id)"
+          >
+            {{ difficulty(i) }}
+          </button>
+        }
       </div>
       <h2>{{ store.level()?.name }}</h2>
       <p class="eyebrow">Goal</p>

@@ -17,17 +17,20 @@ app-factory-canvas {
   .belt path {
     fill: none;
   }
+  .belt path {
+    stroke-linejoin: round;
+  }
   .belt-edge {
     stroke: #14161b;
-    stroke-width: 13;
+    stroke-width: 12;
   }
   .belt-track {
     stroke: #e3bd3b;
-    stroke-width: 8;
+    stroke-width: 7;
   }
   .belt-dash {
-    stroke: #6b5513;
-    stroke-width: 3;
+    stroke: #8a6f1c;
+    stroke-width: 2.5;
     stroke-dasharray: 3 9;
     animation: pf-belt 0.9s linear infinite;
   }

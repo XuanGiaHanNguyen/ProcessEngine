@@ -134,7 +134,7 @@ Every rule is deterministic, so a design always has exactly one score.
   earliest (cotton → carder → sewing station → market).
 - **Blocking.** A machine whose output nobody takes stops after `K` batches. The woodshop's
   guitar-body recipe also makes an offcut, so a guitar line jams unless the offcuts go
-  somewhere (the market buys them as scrap, or a woodshop turns them into dowels).
+  somewhere (the market buys them as scrap).
 - **Overbuying.** Ordered units are paid for even if they only pile up.
 - **Wind-down.** Anything bought in the last hours cannot reach the market in time.
 
@@ -244,7 +244,6 @@ Every level draws on one catalog. Money is shown in dollars here; files use cent
 | | | `kite` | 1 fabric + 2 dowels + 2 string → 1 kite | 1 |
 | Woodshop | $18 | `guitar-body` | 3 wood → 1 guitar body + 1 offcut | 2 |
 | | | `dowel` | 1 wood → 3 dowels | 1 |
-| | | `dowel-offcut` | 1 offcut → 2 dowels | 1 |
 | Molder | $12 | `pegs` | 1 plastic → 4 tuning pegs | 1 |
 | Press | $15 | `wheels` | 2 rubber + 1 plastic → 4 wheels | 1 |
 | Workbench | $12 | `chassis` | 2 wood + 3 plastic → 2 chassis | 1 |
@@ -255,7 +254,7 @@ Every level draws on one catalog. Money is shown in dollars here; files use cent
 
 | Product | Price | Demand (per hour) | Overflow price |
 |---|---|---|---|
-| Stuffed animal | $9.00 | 3 (2 in levels 2–3) | $5.00 |
+| Stuffed animal | $9.00 | 3 | $5.00 |
 | Toy guitar | $28.00 | 1 | $16.00 |
 | Toy car | $13.00 | 2 | $7.00 |
 | Kite | $8.00 | 2 | $4.50 |
@@ -263,22 +262,19 @@ Every level draws on one catalog. Money is shown in dollars here; files use cent
 
 Where the decisions come from: string feeds four recipes from one capped supplier; fabric and
 the sewing stations are shared by stuffed animals and kites; the assembly bench is shared by
-guitars and cars; guitar bodies leave offcuts that either jam the woodshop, sell as scrap,
-or become free kite dowels; and demand caps make a single-product factory sell at overflow
+guitars and cars; guitar bodies leave offcuts that jam the woodshop unless they are sold as
+scrap; and demand caps make a single-product factory sell at overflow
 prices.
 
 ## Levels
 
-Files: `instances/factory/N-id.json`. All levels last 24 hours, with belt capacity 10 and
-buffers of 2 batches.
+There are two levels, an easy one and a hard one. Files: `instances/factory/N-id.json`.
+Both last 24 hours, with belt capacity 10 and buffers of 2 batches.
 
-| # | Level | Slots | Budget | Products | Teaches | Initial | Best known | Upper bound |
-|---|---|---|---|---|---|---|---|---|
-| 1 | First Stitch | 5 | – | stuffed animal | placing machines, belts, testing, stepping | $16.20 | $116.20 | $317.51 |
-| 2 | Up and Away | 7 | – | + kite | sharing fabric and sewing stations, split weights | $67.80 | $184.40 | $389.46 |
-| 3 | Rock Band | 8 | – | stuffed animal, toy guitar | slow batches, blocking (the initial design jams on offcuts) | $6.40 | $224.60 | $639.40 |
-| 4 | Full Line | 10 | – | all four | demand caps, choosing a product mix | $213.40 | $331.60 | $795.69 |
-| 5 | Tight Budget | 8 | $130 | all four, + `dowel-offcut` | a build budget, reusing offcuts | $7.40 | $232.60 | $569.65 |
+| Level | Slots | Products | Initial | Best known | Upper bound |
+|---|---|---|---|---|---|
+| **Easy:** First Stitch | 5 | stuffed animal (cotton, string) | $16.20 | $116.20 | $317.51 |
+| **Hard:** Full Line | 10 | all four toys (all five raw materials) | $213.40 | $331.60 | $795.69 |
 
 "Best known" is the best of three 10-second `local_search` runs (`pf_factory`, seeds 1–3);
 it is a lower bound, not a proven optimum. "Upper bound" is the flow LP relaxation
@@ -287,23 +283,17 @@ files store each best-known design, and the engine's tests pin its profit.
 
 | Level | Best known design | Orders per hour | Sales | Purchases | Build | Profit |
 |---|---|---|---|---|---|---|
-| 1 | loom, carder, 2 × sewing (animals) | cotton 8, string 5 | $288.00 | $106.80 | $65.00 | **$116.20** |
-| 2 | 2 × loom, carder, woodshop (dowels), 2 × sewing (animals), sewing (kites) | cotton 9, string 7, wood 1 | $450.00 | $147.60 | $118.00 | **$184.40** |
-| 3 | loom, carder, sewing (animals), 2 × woodshop (bodies), molder, 2 × assembly (guitars) | cotton 4, string 5, plastic 1, wood 5 | $544.00 | $176.40 | $143.00 | **$224.60** |
-| 4 | as level 3 + a second sewing station and a press | cotton 8, string 9, plastic 1, wood 3 | $710.00 | $200.40 | $178.00 | **$331.60** |
-| 5 | loom, carder, 2 × sewing (animals), woodshop (bodies), molder, assembly (guitars) | cotton 8, string 7, plastic 1, wood 3 | $541.00 | $188.40 | $120.00 | **$232.60** |
+| Easy | loom, carder, 2 × sewing (animals) | cotton 8, string 5 | $288.00 | $106.80 | $65.00 | **$116.20** |
+| Hard | loom, carder, 2 × sewing (animals), 2 × woodshop (bodies), molder, 2 × assembly (guitars), press | cotton 8, string 9, plastic 1, wood 3 | $710.00 | $200.40 | $178.00 | **$331.60** |
 
-The level 4 press never runs (no rubber is ordered), yet removing it costs $69: it takes
-a share of the single plastic per hour, which spaces out peg production so guitars rarely
+The Hard press never runs (no rubber is ordered), yet removing it costs $69: it takes a
+share of the single plastic per hour, which spaces out peg production so guitars rarely
 arrive two in the same hour (when the second one sells at the overflow price). Timing is
 part of the game.
 
-Level 2's objectives ("sell 10 kites", "earn $120") can be met together: the best-known
-design sells 18 kites, and the reference design "Alternative 1" sells 28 kites for $120.40.
-
 ## Worked example (hand-checked)
 
-Level 1, initial design: loom (s1), carder (s2), one sewing station (s3); orders cotton 8,
+Easy level, initial design: loom (s1), carder (s2), one sewing station (s3); orders cotton 8,
 string 4; belts cotton → loom and carder, string → loom and sewing, fabric and stuffing →
 sewing, animals → market.
 

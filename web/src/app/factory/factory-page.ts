@@ -108,9 +108,11 @@ export class FactoryPage implements OnInit {
     void this.store.init();
   }
 
-  protected step(delta: number): void {
-    const next = this.store.levels()[this.store.levelIndex() + delta];
-    if (next) void this.store.open(next.id);
+  /** Tab label for the i-th level: Easy and Hard when there are two. */
+  protected difficulty(i: number): string {
+    const n = this.store.levels().length;
+    if (n === 2) return i === 0 ? 'Easy' : 'Hard';
+    return `Level ${i + 1}`;
   }
 
   protected selectNode(id: string | null): void {

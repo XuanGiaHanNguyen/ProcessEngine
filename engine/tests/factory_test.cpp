@@ -70,7 +70,7 @@ Json passThrough() {
 
 TEST(FactoryLevels, EveryLevelParsesAndReferenceProfitsMatch) {
   const auto files = test::factoryLevelFiles();
-  ASSERT_EQ(files.size(), 5U);
+  ASSERT_EQ(files.size(), 2U);
   for (const auto& f : files) {
     SCOPED_TRACE(f.string());
     const Json doc = test::loadJson(f);
