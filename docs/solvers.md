@@ -403,3 +403,42 @@ instances and requires identical inventory, legality, events, value, and encodin
 CI runs the benchmarks on every push and uploads `bench.json`. Comparing against a stored
 baseline to flag >20% regressions needs a stable runner, so for now it is done by hand
 (compare two `bench.json` files).
+
+---
+
+## Factory solvers (Factory mode)
+
+Factory mode optimizes a *design* (machines, orders, belts; see
+[factory-spec.md](factory-spec.md)), not a schedule. The solvers live in
+`engine/include/pf/factory/solvers.hpp` and follow the same rule as the schedule solvers:
+`FactorySolver::solve()` is non-virtual, checks the returned design, and takes its profit
+from `simulate()`.
+
+All three search over *machine lists* and *order rates*. A machine list becomes a design by
+`autoWiredDesign`: machines go into slots upstream first, and every producer of a resource
+is belted to every consumer of it (and to the market if it buys it). Each candidate is scored
+by running the full 24-hour simulation (a few microseconds).
+
+| Name | Idea |
+|---|---|
+| `greedy` | From an empty floor, repeatedly add the *chain* (a machine plus producers for any input nobody makes yet) that raises profit most, tuning orders by coordinate descent after each add; stop when nothing helps, then drop machines whose removal helps. Deterministic. |
+| `local_search` | Simulated annealing from the greedy design: add a chain, remove a machine, swap a machine's recipe, or nudge one order; the temperature falls linearly over the time limit; the best design gets its orders re-tuned and is pruned. |
+| `flow_lp` | Solve the flow LP below, keep its whole machine counts plus the largest fractional ones, take its order rates, then run the greedy from there. |
+
+**Upper bound (`flowUpperBound`).** A linear program over totals: batches `X_j` and machines
+`n_j` per recipe, order rates `o_s`, and units sold at full price `F_p` and at the overflow
+price `V_p`. Constraints: per resource, consumed + sold <= bought + produced; `X_j <= n_j *
+floor((T - 1) / hours_j)` (nothing arrives before hour 1); `sum n_j <=` slots; build cost <=
+budget; `o_s <= max_rate`; `F_p <= demand * (T - 1)`. Every simulated design satisfies these,
+so the LP optimum bounds every design's profit. It ignores timing, belts and integrality, so
+it is 2-3x the best designs found.
+
+`pf_factory --time-limit 3000 instances/factory/*.json` (Apple M-series):
+
+| Level | Initial | `greedy` | `local_search` (3 s) | `flow_lp` | Bound |
+|---|---|---|---|---|---|
+| First Stitch | $16.20 | $99.80 | $116.20 | $85.80 | $317.51 |
+| Up and Away | $67.80 | $184.40 | $184.40 | $105.20 | $389.46 |
+| Rock Band | $6.40 | $183.00 | $224.60 | $219.00 | $639.40 |
+| Full Line | $213.40 | $311.40 | $321.80 | $230.00 | $795.69 |
+| Tight Budget | $7.40 | $205.60 | $232.60 | $205.60 | $569.65 |

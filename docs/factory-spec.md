@@ -272,29 +272,34 @@ prices.
 Files: `instances/factory/N-id.json`. All levels last 24 hours, with belt capacity 10 and
 buffers of 2 batches.
 
-| # | Level | Slots | Budget | Products | Teaches | Initial | Best known |
-|---|---|---|---|---|---|---|---|
-| 1 | First Stitch | 5 | – | stuffed animal | placing machines, belts, testing, stepping | $16.20 | $99.80 |
-| 2 | Up and Away | 7 | – | + kite | sharing fabric and sewing stations, split weights | $67.80 | $134.80 |
-| 3 | Rock Band | 8 | – | stuffed animal, toy guitar | slow batches, blocking (the initial design jams on offcuts) | $6.40 | $219.00 |
-| 4 | Full Line | 10 | – | all four | demand caps, choosing a product mix | $213.40 | $306.00 |
-| 5 | Tight Budget | 8 | $130 | all four, + `dowel-offcut` | a build budget, reusing offcuts | $7.40 | $213.40 |
+| # | Level | Slots | Budget | Products | Teaches | Initial | Best known | Upper bound |
+|---|---|---|---|---|---|---|---|---|
+| 1 | First Stitch | 5 | – | stuffed animal | placing machines, belts, testing, stepping | $16.20 | $116.20 | $317.51 |
+| 2 | Up and Away | 7 | – | + kite | sharing fabric and sewing stations, split weights | $67.80 | $184.40 | $389.46 |
+| 3 | Rock Band | 8 | – | stuffed animal, toy guitar | slow batches, blocking (the initial design jams on offcuts) | $6.40 | $224.60 | $639.40 |
+| 4 | Full Line | 10 | – | all four | demand caps, choosing a product mix | $213.40 | $331.60 | $795.69 |
+| 5 | Tight Budget | 8 | $130 | all four, + `dowel-offcut` | a build budget, reusing offcuts | $7.40 | $232.60 | $569.65 |
 
-"Best known" is the best design found while tuning the levels (a search over machine sets
-with every producer wired to every consumer); it is a lower bound, not a proven optimum. The
-factory solvers (F2) report their own results and an upper bound.
+"Best known" is the best of three 10-second `local_search` runs (`pf_factory`, seeds 1–3);
+it is a lower bound, not a proven optimum. "Upper bound" is the flow LP relaxation
+(`flowUpperBound`), which ignores timing, belts and whole machines, so it is loose. The level
+files store each best-known design, and the engine's tests pin its profit.
 
 | Level | Best known design | Orders per hour | Sales | Purchases | Build | Profit |
 |---|---|---|---|---|---|---|
-| 1 | loom, carder, 2 × sewing (animals) | cotton 7, string 4 | $256.00 | $91.20 | $65.00 | **$99.80** |
-| 2 | 2 × loom, 2 × carder, 3 × sewing (animals) | cotton 12, string 6 | $396.00 | $151.20 | $110.00 | **$134.80** |
-| 3 | loom, carder, sewing (animals), 2 × woodshop (bodies), molder, 2 × assembly (guitars) | cotton 4, string 5, plastic 1, wood 3 | $500.00 | $138.00 | $143.00 | **$219.00** |
-| 4 | as level 3 + a third woodshop and a second sewing station | cotton 7, string 7, plastic 1, wood 3 | $665.80 | $178.80 | $181.00 | **$306.00** |
-| 5 | loom, carder, 2 × sewing (animals), woodshop (bodies), molder, assembly (guitars) | cotton 7, string 5, plastic 1, wood 2 | $481.00 | $147.60 | $120.00 | **$213.40** |
+| 1 | loom, carder, 2 × sewing (animals) | cotton 8, string 5 | $288.00 | $106.80 | $65.00 | **$116.20** |
+| 2 | 2 × loom, carder, woodshop (dowels), 2 × sewing (animals), sewing (kites) | cotton 9, string 7, wood 1 | $450.00 | $147.60 | $118.00 | **$184.40** |
+| 3 | loom, carder, sewing (animals), 2 × woodshop (bodies), molder, 2 × assembly (guitars) | cotton 4, string 5, plastic 1, wood 5 | $544.00 | $176.40 | $143.00 | **$224.60** |
+| 4 | as level 3 + a second sewing station and a press | cotton 8, string 9, plastic 1, wood 3 | $710.00 | $200.40 | $178.00 | **$331.60** |
+| 5 | loom, carder, 2 × sewing (animals), woodshop (bodies), molder, assembly (guitars) | cotton 8, string 7, plastic 1, wood 3 | $541.00 | $188.40 | $120.00 | **$232.60** |
 
-Level 2's objectives ("sell 10 kites", "earn $120") push the player off the animal-only
-optimum: the reference design "Alternative 1" (2 looms, carder, woodshop for dowels, one
-animal and two kite stations) sells 28 kites and earns $120.40.
+The level 4 press never runs (no rubber is ordered), yet removing it costs $69: it takes
+a share of the single plastic per hour, which spaces out peg production so guitars rarely
+arrive two in the same hour (when the second one sells at the overflow price). Timing is
+part of the game.
+
+Level 2's objectives ("sell 10 kites", "earn $120") can be met together: the best-known
+design sells 18 kites, and the reference design "Alternative 1" sells 28 kites for $120.40.
 
 ## Worked example (hand-checked)
 
