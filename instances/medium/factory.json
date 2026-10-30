@@ -1,0 +1,30 @@
+{
+  "name": "Factory",
+  "description": "Five processes, generators with no inputs, a three-level chain, and three workers.",
+  "comment": "Optimum unknown (too large to do by hand). The reference schedule is hand-simulated: smelt@0 x2 uses all 4 ore and 2 coal; dig_coal@0 yields 1 coal at tick 1; at tick 2 the 2 iron and 1 coal feed forge@2, which yields 1 steel at tick 5. Final inventory: 1 steel -> 15.",
+  "resources": [
+    {"id": "ore", "name": "Ore", "sell_price": 0},
+    {"id": "coal", "name": "Coal", "sell_price": 0},
+    {"id": "iron", "name": "Iron", "sell_price": 4},
+    {"id": "steel", "name": "Steel", "sell_price": 15},
+    {"id": "tool", "name": "Tool", "sell_price": 40}
+  ],
+  "processes": [
+    {"id": "mine", "name": "Mine ore", "inputs": {}, "outputs": {"ore": 1}, "duration": 1},
+    {"id": "dig_coal", "name": "Dig coal", "outputs": {"coal": 1}, "duration": 1},
+    {"id": "smelt", "name": "Smelt", "inputs": {"ore": 2, "coal": 1}, "outputs": {"iron": 1}, "duration": 2},
+    {"id": "forge", "name": "Forge", "inputs": {"iron": 2, "coal": 1}, "outputs": {"steel": 1}, "duration": 3},
+    {"id": "craft", "name": "Craft tool", "inputs": {"steel": 2}, "outputs": {"tool": 1}, "duration": 4, "max_runs": 2}
+  ],
+  "start_inventory": {"ore": 4, "coal": 2},
+  "workers": 3,
+  "horizon": 12,
+  "reference_solutions": [
+    {"runs": [
+      {"process_id": "smelt", "start_tick": 0},
+      {"process_id": "smelt", "start_tick": 0},
+      {"process_id": "dig_coal", "start_tick": 0},
+      {"process_id": "forge", "start_tick": 2}
+    ], "earnings": 15, "optimal": false}
+  ]
+}

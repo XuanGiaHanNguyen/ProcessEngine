@@ -1,0 +1,26 @@
+{
+  "name": "Greenhouse",
+  "description": "Worker-limited: three seeds, two beds, each crop takes 3 ticks.",
+  "comment": "Hand-computed optimum = 15. Every seed can become at most one crop (+4 each). Two workers fit two crops in [0,3) and the third in [3,6), so all 3 seeds convert: 3 crops * 5 = 15.",
+  "resources": [
+    {"id": "seed", "name": "Seed", "sell_price": 1},
+    {"id": "crop", "name": "Crop", "sell_price": 5}
+  ],
+  "processes": [
+    {"id": "grow", "name": "Grow", "inputs": {"seed": 1}, "outputs": {"crop": 1}, "duration": 3}
+  ],
+  "start_inventory": {"seed": 3},
+  "workers": 2,
+  "horizon": 6,
+  "reference_solutions": [
+    {"runs": [
+      {"process_id": "grow", "start_tick": 0},
+      {"process_id": "grow", "start_tick": 0},
+      {"process_id": "grow", "start_tick": 3}
+    ], "earnings": 15, "optimal": true},
+    {"runs": [
+      {"process_id": "grow", "start_tick": 0},
+      {"process_id": "grow", "start_tick": 3}
+    ], "earnings": 11, "optimal": false}
+  ]
+}
