@@ -78,14 +78,7 @@ import { ComparisonRow } from '../../state/solve-run';
             </tbody>
           </table>
         </div>
-        <p class="small muted">
-          Gap is measured against
-          {{ referenceKind() === 'proven' ? 'the proven optimum' : 'the best schedule found' }}
-          @if (reference() !== null) {
-            ({{ reference() }})
-          }
-          .
-        </p>
+        <p class="small muted">Gap is measured against {{ referenceText() }}.</p>
         <div class="charts">
           @if (earningsChart(); as cfg) {
             <div>
@@ -145,6 +138,13 @@ export class ComparisonView {
   readonly pick = output<string>();
 
   private readonly done = computed(() => this.rows().filter((r) => r.solution?.valid));
+
+  protected readonly referenceText = computed(() => {
+    const kind =
+      this.referenceKind() === 'proven' ? 'the proven optimum' : 'the best schedule found';
+    const ref = this.reference();
+    return ref === null ? kind : `${kind} (${ref})`;
+  });
 
   protected readonly earningsSummary = computed(
     () =>

@@ -157,3 +157,23 @@ jobs:
           name: playwright-report
           path: web/playwright-report
 
+  docker:
+    name: docker compose up
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start
+        run: docker compose up -d --build --wait
+      - name: Smoke test through nginx
+        run: |
+          curl -fsS http://localhost:8080/ | grep -q "<app-root>"
+          curl -fsS http://localhost:8080/api/health | grep -q ok
+          curl -fsS http://localhost:8080/api/instances/samples | grep -q sawmill
+          job=$(curl -fsS -X POST http://localhost:8080/api/solve -H 'Content-Type: application/json' \
+            -d "{\"instance\": $(cat instances/small/sawmill.json), \"solvers\": [\"branch_and_bound\"]}" \
+            | sed -E 's/.*"jobId":"([^"]+)".*/\1/')
+          sleep 2
+          curl -fsS http://localhost:8080/api/solve/$job | grep -q '"earnings":8'
+      - name: Logs
+        if: always()
+        run: docker compose logs
