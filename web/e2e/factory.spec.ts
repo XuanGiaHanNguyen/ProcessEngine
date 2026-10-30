@@ -86,7 +86,7 @@ test('edit, test and play back a factory', async ({ page, problems }) => {
 
 test('auto-build with the optimizers, inside the factory', async ({ page, problems }) => {
   await openLevelOne(page);
-  await page.getByRole('button', { name: 'Auto', exact: true }).click();
+  await page.locator('.tests-head').getByRole('button', { name: 'Auto' }).click();
   await expect(page.getByRole('tab', { name: /Auto/ })).toHaveAttribute('aria-selected', 'true');
   await page.getByLabel('Time each').selectOption('1000');
   await page.getByRole('checkbox', { name: /flow_lp/ }).uncheck();
@@ -110,7 +110,7 @@ test('auto-build with the optimizers, inside the factory', async ({ page, proble
 
 test('play helpers: hint, score, timeline and share link', async ({ page, problems }) => {
   await openLevelOne(page);
-  await page.getByRole('tab', { name: /Play/ }).click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(page.getByText('Test your own factory to get a score.')).toBeVisible();
 
   // The hint is a real improvement; doing it changes the draft (undoably).
@@ -165,8 +165,14 @@ test('drafts are remembered and levels can be switched', async ({ page, problems
   expect(problems).toEqual([]);
 });
 
-test('the right panel folds away to a rail and back', async ({ page, problems }) => {
+test('the right panel starts folded to a rail, and unfolds and folds', async ({
+  page,
+  problems,
+}) => {
   await openLevelOne(page);
+  await expect(page.getByRole('tab', { name: /Build/ })).toBeHidden();
+  await page.getByRole('button', { name: 'Show panel' }).click();
+  await expect(page.getByRole('tab', { name: /Build/ })).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('button', { name: 'Hide panel' }).click();
   await expect(page.getByRole('tab', { name: /Build/ })).toBeHidden();
   // A rail button opens its tab.

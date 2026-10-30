@@ -93,8 +93,9 @@ export class FactoryPage implements OnInit {
   ];
   /** Which tab of the right panel is open. */
   protected readonly panel = signal<PanelId>('build');
-  /** Whether the right panel is folded away to a strip of tab buttons. */
-  protected readonly collapsed = signal(false);
+  /** Whether the right panel is folded away to a strip of tab buttons. It starts folded, so
+   * the floor gets the room; selecting something or a tab button unfolds it. */
+  protected readonly collapsed = signal(true);
 
   protected readonly target = computed(
     () =>
